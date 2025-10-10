@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:animated_text_kit/animated_text_kit.dart';
 
 // --- Tautan/URL untuk aplikasi ---
 final Uri _waUrl = Uri.parse("https://wa.me/6282289669969?text=Hello");
@@ -37,15 +38,19 @@ class MyApp extends StatelessWidget {
   }
 }
 
-// --- WIDGET BARU UNTUK SPLASH SCREEN ---
+// --- GANTI KODE SPLASHSCREEN LAMA DENGAN YANG INI ---
 class SplashScreen extends StatelessWidget {
   const SplashScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    const colorizeTextStyle = TextStyle(
+      fontSize: 32.0,
+      fontWeight: FontWeight.bold,
+    );
+
     return Scaffold(
       body: Container(
-        // Memberi latar belakang gradien yang sama dengan halaman utama
         width: double.infinity,
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -60,29 +65,77 @@ class SplashScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const CircleAvatar(
-              radius: 80,
-              backgroundImage: AssetImage('assets/images/profile.png'),
+            // EFEK BINGKAI FOTO "BERNAPAS"
+            TweenAnimationBuilder<double>(
+              tween: Tween<double>(begin: 0.0, end: 6.0),
+              duration: const Duration(seconds: 2),
+              builder: (context, value, child) {
+                return Container(
+                  padding: EdgeInsets.all(value), // Padding yg membesar-kecil
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: Colors.transparent,
+                    border: Border.all(
+                      color: const Color(0xFF38BDF8).withAlpha(128),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: child,
+                );
+              },
+              child: const CircleAvatar(
+                radius: 80,
+                backgroundImage: AssetImage('assets/images/profile.png'),
+              ),
+            ).animate(onComplete: (controller) => controller.repeat())
+                .shimmer(delay: 2.seconds, duration: 1.8.seconds, color: const Color(0x8038BDF8)),
+
+            const SizedBox(height: 30),
+
+            // EFEK TEKS MENGETIK UNTUK NAMA
+            AnimatedTextKit(
+              animatedTexts: [
+                TypewriterAnimatedText(
+                  'M. Reno Novriansyah',
+                  textStyle: colorizeTextStyle,
+                  speed: const Duration(milliseconds: 100),
+                  cursor: '_',
+                ),
+              ],
+              totalRepeatCount: 1,
             ),
-            const SizedBox(height: 24),
-            const Text(
-              'M. Reno Novriansyah',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white),
+
+            const SizedBox(height: 12),
+
+            // EFEK TEKS MENGETIK UNTUK TAGLINE
+            AnimatedTextKit(
+              animatedTexts: [
+                TypewriterAnimatedText(
+                  'Information Systems Student | Web Developer | Photographer',
+                  textAlign: TextAlign.center,
+                  textStyle: const TextStyle(
+                    fontSize: 14,
+                    color: Color(0xFF94A3B8),
+                  ),
+                  speed: const Duration(milliseconds: 50),
+                  cursor: '',
+                ),
+              ],
+              totalRepeatCount: 1,
+              pause: const Duration(milliseconds: 1000),
             ),
+
             const SizedBox(height: 48),
-            ElevatedButton(
+
+            // Tombol muncul setelah animasi teks selesai
+            ElevatedButton.icon(
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF38BDF8),
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+                    const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(30)),
               ),
-              // Navigasi ke halaman portofolio saat tombol ditekan
               onPressed: () {
                 Navigator.of(context).pushReplacement(
                   MaterialPageRoute(
@@ -90,20 +143,20 @@ class SplashScreen extends StatelessWidget {
                   ),
                 );
               },
-              child: const Text(
+              icon: const Icon(
+                Icons.arrow_forward,
+                color: Color(0xFF020617),
+              ),
+              label: const Text(
                 'Visit Profile',
                 style: TextStyle(
                   fontWeight: FontWeight.bold,
                   color: Color(0xFF020617),
-                  fontSize: 18,
+                  fontSize: 16,
                 ),
               ),
-            ),
-          ]
-              // Animasi untuk elemen-elemen di splash screen
-              .animate(interval: 200.ms)
-              .fadeIn(duration: 800.ms)
-              .slideY(begin: 0.2, curve: Curves.easeOut),
+            ).animate().fadeIn(delay: 6.seconds, duration: 1.seconds),
+          ],
         ),
       ),
     );
