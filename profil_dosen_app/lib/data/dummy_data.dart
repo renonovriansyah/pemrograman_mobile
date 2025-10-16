@@ -35,12 +35,12 @@ List<Dosen> generateDummyDosen() {
 
       String fotoUrl;
       if (isPria) {
-        fotoUrl = 'https://source.unsplash.com/500x500/?man,portrait&sig=$nipUnik';
+        fotoUrl = 'assets/dosenpria.png';
       } else {
         if (fakultas == 'Syariah') {
-          fotoUrl = 'https://source.unsplash.com/500x500/?woman,hijab&sig=$nipUnik';
+          fotoUrl = 'assets/dosenhijab.png';
         } else {
-          fotoUrl = 'https://source.unsplash.com/500x500/?woman,portrait&sig=$nipUnik';
+          fotoUrl = 'assets/dosenwanita.png';
         }
       }
 

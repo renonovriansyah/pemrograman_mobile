@@ -163,7 +163,7 @@ class DosenListScreen extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 35,
-                backgroundImage: NetworkImage(dosen.fotoUrl),
+                backgroundImage: AssetImage(dosen.fotoUrl),
               ),
               const SizedBox(width: 16),
               Expanded(

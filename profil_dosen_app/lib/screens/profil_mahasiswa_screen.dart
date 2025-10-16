@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/mahasiswa_provider.dart';
+import 'dart:ui'; // Diperlukan untuk efek blur (ImageFilter)
 
 class ProfilMahasiswaScreen extends StatelessWidget {
   const ProfilMahasiswaScreen({super.key});
@@ -9,69 +10,103 @@ class ProfilMahasiswaScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final mahasiswa = Provider.of<MahasiswaProvider>(context);
 
+    // Logika untuk memilih path foto profil yang benar
+    String fotoProfilPath;
+    if (mahasiswa.jenisKelamin == 'Laki-laki') {
+      fotoProfilPath = 'assets/mahasiswapria.png';
+    } else { // Jika perempuan
+      if (mahasiswa.fakultas == 'Syariah') {
+        fotoProfilPath = 'assets/mahasiswahijab.png';
+      } else {
+        fotoProfilPath = 'assets/mahasiswawanita.png';
+      }
+    }
+
     return Scaffold(
-      // --- PERUBAHAN UI: APPBAR TRANSPARAN ---
-      extendBodyBehindAppBar: true, 
-      appBar: AppBar(
-        title: const Text('Profil Mahasiswa'),
-        backgroundColor: Colors.transparent, // Transparan
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // --- PERUBAHAN UI: HEADER BARU ---
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.only(top: 100, bottom: 24),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Color(0xFF0A2647), Color(0xFF205295)],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+      // Body sekarang menggunakan CustomScrollView
+      body: CustomScrollView(
+        slivers: [
+          // AppBar dinamis yang bisa membesar dan mengecil
+          SliverAppBar(
+            expandedHeight: 300.0, // Memberi ruang lebih untuk header
+            floating: false,
+            pinned: true, // AppBar akan tetap terlihat saat di-scroll
+            backgroundColor: const Color(0xFF0A2647),
+            flexibleSpace: FlexibleSpaceBar(
+              title: Text(
+                mahasiswa.nama,
+                style: const TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                  shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
+                ),
+                textAlign: TextAlign.center,
               ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(30),
-                bottomRight: Radius.circular(30),
-              ),
-            ),
-            child: Column(
-              children: [
-                const CircleAvatar(
-                  radius: 55,
-                  backgroundColor: Colors.white,
-                  child: CircleAvatar(
-                    radius: 52,
-                    backgroundImage: NetworkImage('https://picsum.photos/seed/mahasiswa123/200/200'),
+              centerTitle: true,
+              titlePadding: const EdgeInsets.only(left: 48, right: 48, bottom: 16),
+              background: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Gambar latar belakang yang diburamkan
+                  Image.asset(
+                    fotoProfilPath,
+                    fit: BoxFit.cover,
                   ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  mahasiswa.nama,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(color: Colors.white, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  mahasiswa.nim,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70),
-                ),
-              ],
+                  BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 4.0, sigmaY: 4.0),
+                    child: Container(
+                      color: Colors.black.withAlpha(102), // Opacity 0.4
+                    ),
+                  ),
+                  // Konten header (foto, jenis kelamin, NIM)
+                  Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const SizedBox(height: 20), // Penyesuaian jarak dari atas
+                        CircleAvatar(
+                          radius: 55,
+                          backgroundColor: Colors.white,
+                          child: CircleAvatar(
+                            radius: 52,
+                            backgroundImage: AssetImage(fotoProfilPath),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        // Nama sekarang menjadi judul, jadi kita tampilkan sisanya di sini
+                        Text(
+                          mahasiswa.jenisKelamin,
+                          style: Theme.of(context).textTheme.bodyLarge?.copyWith(color: Colors.white70),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          mahasiswa.nim,
+                          style: Theme.of(context).textTheme.titleMedium?.copyWith(color: Colors.white70),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-          Expanded(
-            child: ListView(
+          // Sisa konten halaman (kartu informasi)
+          SliverToBoxAdapter(
+            child: Padding(
               padding: const EdgeInsets.all(16.0),
-              children: [
-                _buildInfoCard(
-                  title: 'Data Akademik',
-                  icon: Icons.school,
-                  data: {
-                    'Fakultas': mahasiswa.fakultas,
-                    'Jurusan': mahasiswa.jurusan,
-                    'Dosen PA': mahasiswa.dosenPembimbing?.nama ?? 'Belum Ditentukan',
-                  },
-                ),
-              ],
+              child: Column(
+                children: [
+                  _buildInfoCard(
+                    title: 'Data Akademik',
+                    icon: Icons.school,
+                    data: {
+                      'Fakultas': mahasiswa.fakultas,
+                      'Jurusan': mahasiswa.jurusan,
+                      'Dosen PA': mahasiswa.dosenPembimbing?.nama ?? 'Belum Ditentukan',
+                    },
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -79,8 +114,8 @@ class ProfilMahasiswaScreen extends StatelessWidget {
     );
   }
 
+  // Widget helper ini tidak perlu diubah
   Widget _buildInfoCard({required String title, required IconData icon, required Map<String, String> data}) {
-    // ... (fungsi ini tidak berubah)
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),

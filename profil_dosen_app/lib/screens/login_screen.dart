@@ -7,7 +7,6 @@ import '../providers/mahasiswa_provider.dart';
 import '../providers/dosen_provider.dart';
 import '../data/dummy_data.dart';
 
-// Mengubah menjadi StatefulWidget
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
@@ -19,6 +18,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _namaController = TextEditingController();
   final _nimController = TextEditingController();
   String? _selectedJurusan;
+  String? _selectedJenisKelamin;
   final _formKey = GlobalKey<FormState>();
 
   @override
@@ -29,23 +29,24 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _submitLogin() {
-    // Validasi form
-    if (_formKey.currentState!.validate()) {
-      // Ambil semua provider (listen: false karena di dalam fungsi)
+    bool isGenderSelected = _selectedJenisKelamin != null;
+    if (_formKey.currentState!.validate() && isGenderSelected) {
       final mahasiswaProvider = Provider.of<MahasiswaProvider>(context, listen: false);
       final dosenProvider = Provider.of<DosenProvider>(context, listen: false);
       
-      // Panggil fungsi login dari provider
       mahasiswaProvider.login(
         _namaController.text,
         _nimController.text,
+        _selectedJenisKelamin!,
         _selectedJurusan!,
-        dosenProvider.filteredDosen // Kirim daftar dosen untuk dipilih jadi Dosen PA
+        dosenProvider.filteredDosen
       );
 
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(builder: (context) => const DosenListScreen()),
       );
+    } else if (!isGenderSelected) {
+      setState(() {});
     }
   }
 
@@ -63,7 +64,6 @@ class _LoginScreenState extends State<LoginScreen> {
           Image.asset('assets/foto.png', fit: BoxFit.cover),
           BackdropFilter(
             filter: ImageFilter.blur(sigmaX: 5.0, sigmaY: 5.0),
-            // --- PERUBAHAN UI: GRADASI Latar Belakang ---
             child: Container(
               decoration: BoxDecoration(
                 gradient: LinearGradient(
@@ -81,16 +81,19 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const SizedBox(height: 60),
-                      Image.asset('assets/logo.png', width: 100),
+                      Center(child: Image.asset('assets/logo.png', width: 100)),
                       const SizedBox(height: 16),
-                      Text(
-                        'UNIVERSITAS TEKNO MAJU',
-                        style: theme.textTheme.headlineSmall?.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          shadows: [const Shadow(blurRadius: 10, color: Colors.black)],
+                      Center(
+                        child: Text(
+                          'UNIVERSITAS TEKNO MAJU',
+                          style: theme.textTheme.headlineSmall?.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            shadows: [const Shadow(blurRadius: 10, color: Colors.black)],
+                          ),
                         ),
                       ),
                       const SizedBox(height: 60),
@@ -109,6 +112,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         validator: (value) => value == null || value.isEmpty ? 'NIM tidak boleh kosong' : null,
                       ),
                       const SizedBox(height: 16),
+
+                      // --- PERUBAHAN URUTAN DI SINI ---
+                      
+                      // 1. Jurusan sekarang di atas
                       // ignore: deprecated_member_use_from_same_package
                       DropdownButtonFormField<String>(
                         value: _selectedJurusan,
@@ -126,8 +133,50 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: const TextStyle(color: Colors.white),
                         validator: (value) => value == null ? 'Pilih jurusan Anda' : null,
                       ),
+                      const SizedBox(height: 16),
+                      
+                      // 2. Jenis Kelamin sekarang di bawah
+                      const Text('Jenis Kelamin', style: TextStyle(color: Colors.white70, fontSize: 16)),
+                      Row(
+                        children: [
+                          Expanded(
+                            // ignore: deprecated_member_use_from_same_package
+                            child: RadioListTile<String>(
+                              title: const Text('Laki-laki', style: TextStyle(color: Colors.white)),
+                              value: 'Laki-laki',
+                              groupValue: _selectedJenisKelamin,
+                              onChanged: (value) {
+                                setState(() { _selectedJenisKelamin = value; });
+                              },
+                              activeColor: Colors.white,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                          Expanded(
+                            // ignore: deprecated_member_use_from_same_package
+                            child: RadioListTile<String>(
+                              title: const Text('Perempuan', style: TextStyle(color: Colors.white)),
+                              value: 'Perempuan',
+                              groupValue: _selectedJenisKelamin,
+                              onChanged: (value) {
+                                setState(() { _selectedJenisKelamin = value; });
+                              },
+                              activeColor: Colors.white,
+                              contentPadding: EdgeInsets.zero,
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (_formKey.currentState?.validate() == false && _selectedJenisKelamin == null)
+                        const Padding(
+                          padding: EdgeInsets.only(left: 12.0),
+                          child: Text(
+                            'Pilih jenis kelamin Anda',
+                            style: TextStyle(color: Color(0xffcf6679), fontSize: 12),
+                          ),
+                        ),
+                      
                       const SizedBox(height: 30),
-                      // --- PERUBAHAN UI: TOMBOL LEBIH MENARIK ---
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
@@ -137,11 +186,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF205295).withAlpha(230),
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)), // Tombol lebih bulat
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                             elevation: 5,
                           ),
                         ),
                       ),
+                      const SizedBox(height: 30),
                     ],
                   ),
                 ),
