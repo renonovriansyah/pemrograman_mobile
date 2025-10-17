@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../models/dosen_model.dart';
-import 'dart:ui'; // Pastikan import ini ada untuk efek blur
+import 'dart:ui';
 
 class DosenDetailScreen extends StatelessWidget {
   final Dosen dosen;
@@ -21,51 +21,35 @@ class DosenDetailScreen extends StatelessWidget {
               titlePadding: const EdgeInsets.symmetric(horizontal: 48, vertical: 16),
               title: Text(
                 dosen.nama,
-                // --- PERBAIKAN #1: MEMBUAT NAMA TERLIHAT ---
                 style: const TextStyle(
                   fontSize: 16,
-                  color: Colors.white, // Mengubah warna teks menjadi putih
-                  shadows: [ // Menambahkan bayangan agar lebih terbaca
-                    Shadow(blurRadius: 4, color: Colors.black54)
-                  ],
+                  color: Colors.white,
+                  shadows: [Shadow(blurRadius: 4, color: Colors.black54)],
                 ),
                 textAlign: TextAlign.center,
               ),
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  // Latar belakang buram dari foto dosen
-                  // --- PERBAIKAN #2: MENANGANI GAMBAR YANG GAGAL DIMUAT ---
-                  Image.network(
+                  // Latar Belakang menggunakan AssetImage
+                  Image.asset(
                     dosen.fotoUrl,
                     fit: BoxFit.cover,
-                    // Menampilkan indikator loading saat gambar diunduh
-                    loadingBuilder: (context, child, loadingProgress) {
-                      if (loadingProgress == null) return child;
-                      return const Center(child: CircularProgressIndicator());
-                    },
-                    // Menampilkan ikon jika gambar gagal dimuat
-                    errorBuilder: (context, error, stackTrace) {
-                      return const Center(child: Icon(Icons.broken_image, color: Colors.grey, size: 50));
-                    },
                   ),
                   BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 3.0, sigmaY: 3.0),
                     child: Container(
-                      color: Colors.black.withAlpha(77),
+                      color: Colors.black.withAlpha(77), // Opacity 0.3
                     ),
                   ),
-                  // Foto utama yang jelas di tengah
                   Center(
                     child: CircleAvatar(
                       radius: 70,
-                      backgroundColor: Colors.white, // Bingkai putih
+                      backgroundColor: Colors.white,
                       child: CircleAvatar(
                         radius: 67,
-                        backgroundImage: NetworkImage(dosen.fotoUrl),
-                        // Menampilkan ikon error jika foto profil gagal dimuat
-                        onBackgroundImageError: (exception, stackTrace) {},
-                        child: const SizedBox.shrink(), // Mencegah placeholder default
+                        // Foto profil utama menggunakan AssetImage
+                        backgroundImage: AssetImage(dosen.fotoUrl),
                       ),
                     ),
                   ),
@@ -104,7 +88,6 @@ class DosenDetailScreen extends StatelessWidget {
     );
   }
 
-  // Widget _buildInfoCard tidak perlu diubah
   Widget _buildInfoCard(String title, Map<String, String> data) {
     return Card(
       elevation: 2,
