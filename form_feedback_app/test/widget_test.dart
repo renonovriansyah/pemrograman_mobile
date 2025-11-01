@@ -7,13 +7,23 @@
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:form_feedback_app/main.dart';
+import 'package:form_feedback_app/feedback_form.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(const FormFeedbackApp());
+    await tester.pumpWidget(
+      MaterialApp(
+        home: FeedbackForm(
+          // --- PARAMETER WAJIB DITAMBAHKAN ---
+          initialOrderId: '#TEST-123',
+          onSubmit: (data) {
+            // Ini adalah fungsi dummy untuk memenuhi persyaratan 'onSubmit'
+            debugPrint('Feedback disubmit di Test: ${data.orderId}');
+          },
+        ),
+      ),
+    );
 
     // Verify that our counter starts at 0.
     expect(find.text('0'), findsOneWidget);
