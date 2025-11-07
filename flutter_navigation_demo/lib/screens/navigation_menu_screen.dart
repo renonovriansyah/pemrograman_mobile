@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'news_detail_page.dart';
 import 'event_registration_page.dart';
+import 'krs_page.dart';
 
 class NavigationMenuScreen extends StatelessWidget {
   const NavigationMenuScreen({super.key});
@@ -64,8 +65,8 @@ class NavigationMenuScreen extends StatelessWidget {
   // --- WIDGET FOOTER ---
   Widget _buildFooter(BuildContext context) {
     return Container(
-      color: const Color(0xFF001F3F), 
-      padding: const EdgeInsets.all(20.0),
+      color: const Color(0xFF001F3F), // Warna Biru Tua Gelap
+      padding: const EdgeInsets.all(25.0), // Padding sedikit diperbesar
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -77,10 +78,28 @@ class NavigationMenuScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('UNIVERSITAS BHINNEKA TUNGGAL IKA', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 10),
-                    Text('Kampus Teknologi dan Inovasi', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    Text('Jl. Terus Jadian Enggak, Jambi', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    // Tambahkan Logo/Nama Kampus yang lebih menonjol
+                    const Text('UNIVERSITAS BHINNEKA TUNGGAL IKA', 
+                      style: TextStyle(
+                        color: Colors.white, 
+                        fontSize: 18, 
+                        fontWeight: FontWeight.bold
+                      )
+                    ),
+                    const SizedBox(height: 10),
+                    const Text('Kampus Teknologi dan Inovasi', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const Text('Jl. Terus Jadian Enggak, Jambi', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const SizedBox(height: 20),
+                    // Tambahkan Navigasi Cepat Tambahan
+                    const Text('KONTAK', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        const Icon(Icons.email, color: Colors.white70, size: 16),
+                        const SizedBox(width: 5),
+                        const Text('info@ubti.ac.id', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                      ],
+                    ),
                   ],
                 ),
               ),
@@ -89,10 +108,11 @@ class NavigationMenuScreen extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('ALUMNI', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
-                    SizedBox(height: 8),
-                    Text('Karir Alumni', style: TextStyle(color: Colors.white70, fontSize: 13)),
-                    Text('Beasiswa', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const Text('ALUMNI', style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 8),
+                    const Text('Karir Alumni', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const Text('Beasiswa', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                    const Text('Portal Dosen', style: TextStyle(color: Colors.white70, fontSize: 13)),
                   ],
                 ),
               ),
@@ -101,7 +121,7 @@ class NavigationMenuScreen extends StatelessWidget {
           const Divider(color: Colors.white54, height: 40),
           Center(
             child: Text(
-              '© 2025 Universitas Bhinneka Tunggal Ika',
+              '© ${DateTime.now().year} Universitas Bhinneka Tunggal Ika | All Rights Reserved',
               style: TextStyle(color: Colors.white54, fontSize: 12),
             ),
           )
@@ -109,7 +129,6 @@ class NavigationMenuScreen extends StatelessWidget {
       ),
     );
   }
-
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -164,12 +183,12 @@ class NavigationMenuScreen extends StatelessWidget {
                     _buildProdiCard(
                       context,
                       title: 'Teknik Informatika',
-                      actionLabel1: 'LIHAT KALENDER (PUSH)', // FUNGSI 1
-                      actionLabel2: 'DETAIL PROFIL (PUSH & DATA)', // FUNGSI 2
+                      actionLabel1: 'LIHAT KRS', // FUNGSI 1
+                      actionLabel2: 'DETAIL PROFIL', // FUNGSI 2
                       imageUrl: 'https://picsum.photos/400/300?random=2',
                       action1: () {
                         // FUNGSI 1: Navigasi Sederhana
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const AcademicCalendarPage()));
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const KRSPage()));
                       },
                       action2: () {
                         // FUNGSI 2: Push & Kirim Data via Route Settings
@@ -185,8 +204,8 @@ class NavigationMenuScreen extends StatelessWidget {
                     _buildProdiCard(
                       context,
                       title: 'Manajemen Bisnis',
-                      actionLabel1: 'CEK PETA KAMPUS (NAMED ROUTE)', // FUNGSI 3
-                      actionLabel2: 'DAFTAR ACARA (POP RESULT)', // FUNGSI 4
+                      actionLabel1: 'CEK PETA KAMPUS', // FUNGSI 3
+                      actionLabel2: 'DAFTAR ACARA', // FUNGSI 4
                       imageUrl: 'https://picsum.photos/400/300?random=3',
                       action1: () {
                         // FUNGSI 3: Named Route
@@ -267,13 +286,13 @@ class NavigationMenuScreen extends StatelessWidget {
                       child: Image.network('https://picsum.photos/100/100?random=4', width: 60, height: 60, fit: BoxFit.cover),
                     ),
                     title: const Text('Rektor Sambut Mahasiswa Baru, Semangat Kampus Merdeka!', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Tap di sini untuk mensimulasikan Log Out'),
+                    subtitle: const Text('Rektor UBTI menyambut lebih dari 3000 mahasiswa baru dengan fokus pada inovasi dan program Kampus Merdeka'),
                     trailing: const Icon(Icons.logout, size: 20, color: Colors.red),
                     onTap: () {
                        // FUNGSI 5: Push Replacement
                        Navigator.pushReplacement(
                           context,
-                          MaterialPageRoute(builder: (context) => const AcademicCalendarPage()),
+                          MaterialPageRoute(builder: (context) => const NewsDetailPage()),
                        );
                     },
                   ),

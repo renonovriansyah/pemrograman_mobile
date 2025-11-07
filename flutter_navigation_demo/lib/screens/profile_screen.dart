@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
 
+  // Widget untuk membangun item detail profil
   Widget _buildProfileTile(IconData icon, String label, String value) {
     return ListTile(
       leading: Icon(icon, color: Colors.blue.shade800),
@@ -11,79 +12,139 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            // Header Profil
-            Stack(
-              alignment: Alignment.center,
+  // Widget untuk membangun konten Drawer
+  Widget _buildDrawerContent(BuildContext context) {
+    return Drawer(
+      child: ListView(
+        padding: EdgeInsets.zero,
+        children: <Widget>[
+          DrawerHeader(
+            decoration: BoxDecoration(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+            child: const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(15),
-                  ),
+                CircleAvatar(
+                  radius: 30,
+                  backgroundColor: Colors.white,
+                  child: Icon(Icons.school, size: 40, color: Color(0xFF001F3F)),
                 ),
-                const Column(
-                  children: [
-                    CircleAvatar(
-                      radius: 40,
-                      backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=1'),
-                      backgroundColor: Colors.white,
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      'John Doe (Mahasiswa Aktif)',
-                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                    ),
-                    Text('Teknik Informatika - Angkatan 2021', style: TextStyle(color: Colors.grey)),
-                  ],
+                SizedBox(height: 10),
+                Text(
+                  'Portal Menu Akademik',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
               ],
             ),
-            
-            const SizedBox(height: 30),
+          ),
+          ListTile(
+            leading: const Icon(Icons.map),
+            title: const Text('Akses Peta Kampus (/map)'),
+            onTap: () {
+              Navigator.pop(context); 
+              Navigator.pushNamed(context, '/map', arguments: 'Akses dari Drawer Profil');
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.exit_to_app, color: Colors.red),
+            title: const Text('Log Out'),
+            onTap: () {
+              Navigator.pop(context);
+              // Menggunakan Push Replacement untuk simulasi Log Out
+              Navigator.pushReplacementNamed(context, '/'); 
+            },
+          ),
+        ],
+      ),
+    );
+  }
 
-            // Detail Informasi
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              child: Padding(
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  children: [
-                    _buildProfileTile(Icons.person, 'NPM', '20210001'),
-                    const Divider(),
-                    _buildProfileTile(Icons.email, 'Email Kampus', 'john.doe@campus.ac.id'),
-                    const Divider(),
-                    _buildProfileTile(Icons.phone, 'Nomor HP', '0812-3456-7890'),
-                    const Divider(),
-                    _buildProfileTile(Icons.badge, 'Dosen Wali', 'Dr. Budi Santoso, M.Kom'),
-                  ],
+  @override
+  Widget build(BuildContext context) {
+    // --- PENEMPATAN DRAWER DAN APPBAR DI SINI ---
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Profil Mahasiswa'),
+        // AppBar secara otomatis menampilkan ikon hamburger karena Drawer ada di Scaffold
+      ),
+      drawer: _buildDrawerContent(context), // <--- PENEMPATAN DRAWER
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              // Header Profil
+              Stack(
+                alignment: Alignment.center,
+                children: [
+                  Container(
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade100,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                  ),
+                  const Column(
+                    children: [
+                      CircleAvatar(
+                        radius: 40,
+                        backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=1'),
+                        backgroundColor: Colors.white,
+                      ),
+                      SizedBox(height: 10),
+                      Text(
+                        'John Doe (Mahasiswa Aktif)',
+                        style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                      ),
+                      Text('Teknik Informatika - Angkatan 2021', style: TextStyle(color: Colors.grey)),
+                    ],
+                  ),
+                ],
+              ),
+              
+              const SizedBox(height: 30),
+
+              // Detail Informasi
+              Card(
+                elevation: 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      _buildProfileTile(Icons.person, 'NPM', '20210001'),
+                      const Divider(),
+                      _buildProfileTile(Icons.email, 'Email Kampus', 'john.doe@campus.ac.id'),
+                      const Divider(),
+                      _buildProfileTile(Icons.phone, 'Nomor HP', '0812-3456-7890'),
+                      const Divider(),
+                      _buildProfileTile(Icons.badge, 'Dosen Wali', 'Dr. Budi Santoso, M.Kom'),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            
-            const SizedBox(height: 20),
+              
+              const SizedBox(height: 20),
 
-            // Tombol Aksi
-            ElevatedButton.icon(
-              onPressed: () { /* Aksi Edit */ },
-              icon: const Icon(Icons.edit),
-              label: const Text('Edit Data Profil'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade800,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+              // Tombol Aksi
+              ElevatedButton.icon(
+                onPressed: () { /* Aksi Edit */ },
+                icon: const Icon(Icons.edit),
+                label: const Text('Edit Data Profil'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade800,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

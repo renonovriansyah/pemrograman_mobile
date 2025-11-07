@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
-class AcademicCalendarPage extends StatelessWidget { // Nama class tetap AcademicCalendarPage
-  const AcademicCalendarPage({super.key});
+class NewsDetailPage extends StatelessWidget { // Nama class tetap AcademicCalendarPage
+  const NewsDetailPage ({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,6 +21,20 @@ class AcademicCalendarPage extends StatelessWidget { // Nama class tetap Academi
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+            children: [
+              Image.asset('assets/logo.png', height: 40, width: 40),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('BERITA RESMI', style: TextStyle(fontSize: 12)),
+                  Text('UNIVERSITAS', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+          const Divider(height: 20),
             // Konten Gambar Berita
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
