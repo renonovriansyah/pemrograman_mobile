@@ -11,87 +11,68 @@ class UKTPage extends StatelessWidget {
     {'deskripsi': 'Biaya Kemahasiswaan', 'idr': '250.000', 'semester': 'Pilih', 'status': 'Pilih'},
   ];
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        // AppBar dengan warna khas Tagihan/Keuangan
-        backgroundColor: const Color(0xFF001F3F), 
-        foregroundColor: Colors.white,
-        title: const Text('Tagihan UKT Semester Genap 2024/2025', style: TextStyle(fontSize: 16)),
-      ),
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header Logo & Tagihan
-            _buildHeaderTagihan(context),
-            
-            // Tabel Tagihan (Meniru Tampilan Profesional)
-            _buildTagihanTable(context),
-
-            // Footer Pembayaran dan Batas Waktu
-            _buildPaymentFooter(context),
-            
-            const SizedBox(height: 50),
-          ],
-        ),
-      ),
-    );
-  }
-  
-  // Widget Header Logo & Tagihan
-  Widget _buildHeaderTagihan(BuildContext context) {
+  // [UNIVERSAL HEADER] - Perbaikan 1: Pastikan dideklarasikan di level class
+  Widget _buildAcademicHeader(BuildContext context) {
     return Container(
       width: double.infinity,
-      color: Colors.white,
-      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
+      color: const Color(0xFF001F3F), 
+      padding: const EdgeInsets.all(20.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Image.asset(
-                'assets/logo.png',
-                height: 40,
-                width: 40,
-              ),
-              const SizedBox(width: 10),
-              const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              Row(
                 children: [
-                  Text('UNIVERSITAS', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
-                  Text('BHINNEKA TUNGGAL IKA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  Image.asset('assets/logo.png', height: 35, width: 35),
+                  const SizedBox(width: 10),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('UNIVERSITAS', style: TextStyle(fontSize: 12, color: Colors.white70)),
+                      Text('BHINNEKA TUNGGAL IKA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    ],
+                  ),
                 ],
               ),
+              const Icon(Icons.menu, color: Colors.white, size: 28),
             ],
           ),
-          const Divider(height: 30),
-          const Text('TAGIHAN UKT SEMESTER GENAP 2024/2025', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-          const Text('Fakultas Teknologi & Informasi', style: TextStyle(fontSize: 12, color: Colors.grey)),
+          const Divider(color: Colors.white38, height: 20),
+          
+          // Info Tagihan
+          const Text('TAGIHAN UKT SEMESTER GENAP 2024/2025', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white)),
+          const Text('Fakultas Sains & Teknologi', style: TextStyle(fontSize: 12, color: Colors.white70)),
           const SizedBox(height: 10),
-          _buildStudentInfoRow('Nama', 'Fawwazy Musin'),
-          _buildStudentInfoRow('NIM', '20210080'),
-          _buildStudentInfoRow('Dosen Wali', 'Tsurayya Rahman'),
+          
+          // Info Mahasiswa (Teks Putih)
+          _buildStudentInfoRow('Nama        ', 'M. Reno Novriansyah', isDarkBackground: true),
+          _buildStudentInfoRow('NIM           ', '701230016', isDarkBackground: true),
+          _buildStudentInfoRow('Dosen PA  ', 'Efitra, M.Kom', isDarkBackground: true),
         ],
       ),
     );
   }
 
-  // Widget Baris Info Mahasiswa Kecil
-  Widget _buildStudentInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
-      child: Row(
-        children: [
-          SizedBox(width: 80, child: Text('$label:', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600))),
-          Text(value, style: const TextStyle(fontSize: 12)),
-        ],
-      ),
-    );
+  // [WIDGET HELPER] - Perbaikan 2: Tambahkan parameter isDarkBackground di definisi
+  Widget _buildStudentInfoRow(String label, String value, {bool isDarkBackground = false}) {
+      Color textColor = isDarkBackground ? Colors.white70 : Colors.black87;
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0),
+        child: Row(
+          children: [
+            SizedBox(width: 80, child: Text('$label:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor))),
+            Text(value, style: TextStyle(fontSize: 12, color: textColor)),
+          ],
+        ),
+      );
   }
 
-  // Widget Tabel Tagihan
+  // ... (Method _buildTagihanTable, _buildTableHeader, _buildDataRow, _buildStatusButton, _buildPaymentFooter)
+  // ... (Sisanya harus ada di sini di level class, seperti yang Anda kirimkan sebelumnya)
+  
+  // Widget Tabel Tagihan (Ditempatkan di sini di level Class)
   Widget _buildTagihanTable(BuildContext context) {
     return Card(
       margin: const EdgeInsets.all(20),
@@ -99,10 +80,7 @@ class UKTPage extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       child: Column(
         children: [
-          // Header Tabel
           _buildTableHeader(),
-          
-          // Data Baris
           ...uktData.map((data) => _buildDataRow(
             data['deskripsi']!,
             data['idr']!,
@@ -114,7 +92,6 @@ class UKTPage extends StatelessWidget {
     );
   }
 
-  // Widget Header Kolom Tabel
   Widget _buildTableHeader() {
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
@@ -132,7 +109,6 @@ class UKTPage extends StatelessWidget {
     );
   }
 
-  // Widget Baris Data Tagihan
   Widget _buildDataRow(String deskripsi, String idr, String semester, String status) {
     bool isTotal = deskripsi.contains('Biaya Kemahasiswaan');
     
@@ -140,7 +116,7 @@ class UKTPage extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
-        color: isTotal ? Colors.yellow.shade50 : Colors.transparent, // Highlight baris total jika ada
+        color: isTotal ? Colors.yellow.shade50 : Colors.transparent,
       ),
       child: Row(
         children: [
@@ -168,7 +144,6 @@ class UKTPage extends StatelessWidget {
     );
   }
 
-  // Widget Tombol Status (Pilih/Hapus/Paid)
   Widget _buildStatusButton(String status) {
     Color color = Colors.grey.shade500;
     if (status == 'Paid') color = Colors.green.shade700;
@@ -188,7 +163,6 @@ class UKTPage extends StatelessWidget {
     );
   }
 
-  // Widget Footer Pembayaran dan Batas Waktu
   Widget _buildPaymentFooter(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
@@ -214,11 +188,41 @@ class UKTPage extends StatelessWidget {
           const SizedBox(height: 15),
           const Center(
             child: Text(
-              'Batas Pembayaran: 31 Maret 2025', 
+              'Batas Pembayaran: 31 Maret 2026', 
               style: TextStyle(fontSize: 12, color: Colors.red),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF001F3F), 
+        foregroundColor: Colors.white,
+        title: const Text('Tagihan UKT Semester Genap 2024/2025', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+      ),
+      
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Header Logo & Tagihan (Sekarang Full Biru Navy)
+            _buildAcademicHeader(context),
+            
+            // Tabel Tagihan
+            _buildTagihanTable(context),
+
+            // Footer Pembayaran dan Batas Waktu
+            _buildPaymentFooter(context),
+            
+            const SizedBox(height: 50),
+          ],
+        ),
       ),
     );
   }

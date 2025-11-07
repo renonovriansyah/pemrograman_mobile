@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_navigation_demo/screens/krs_page.dart';
+import 'package:flutter_navigation_demo/screens/schedule_page.dart';
 import 'package:flutter_navigation_demo/screens/ukt_page.dart';
 import 'event_registration_page.dart'; // Untuk Pop Result
 import 'news_detail_page.dart'; // Untuk Navigasi Sederhana
@@ -111,7 +112,7 @@ class ServicesTab extends StatelessWidget {
               _buildCompactServiceTile(
                 context, 
                 Icons.calendar_today, 'Jadwal Kuliah', Colors.purple.shade700, 
-                () => Navigator.push(context, MaterialPageRoute(builder: (context) => const NewsDetailPage()))
+                () => Navigator.push(context, MaterialPageRoute(builder: (context) => const SchedulePage()))
               ),
               
               // 4. Webmail: SnackBar (Feedback Cepat)

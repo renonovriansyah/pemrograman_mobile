@@ -13,50 +13,55 @@ class KRSPage extends StatelessWidget {
   ];
 
   // Widget Header Mahasiswa (Meniru Layout di Gambar)
-  Widget _buildStudentHeader(BuildContext context) {
-    return Card(
-      // ... styling
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column( // Ubah Row utama menjadi Column untuk menampung Logo Header dan Info Mahasiswa
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // INTEGRASI LOGO HEADER
-            Row( 
-              children: [
-                Image.asset('assets/logo.png', height: 40, width: 40), // Pastikan asset terdaftar!
-                const SizedBox(width: 10),
-                const Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text('UNIVERSITAS', style: TextStyle(fontSize: 12)),
-                    Text('BHINNEKA TUNGGAL IKA', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                  ],
-                ),
-              ],
-            ),
-            const Divider(height: 20, thickness: 0.5),
-        
-            const CircleAvatar(
-              radius: 25,
-              backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=15'), 
-              backgroundColor: Colors.grey,
-            ),
-            const SizedBox(width: 15),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('Hayyan Tanwir', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                Text('NIM: 20210045 - Teknik Informatika', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-                Text('Dosen Wali: Dr. Rina M.Kom', style: TextStyle(fontSize: 12, color: Colors.grey.shade700)),
-              ],
-            ),
-          ],
-        ),
+  Widget buildAcademicHeader(BuildContext context) {
+    return Container(
+      color: const Color(0xFF001F3F), 
+      padding: const EdgeInsets.all(15.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Row(
+                children: [
+                  Image.asset('assets/logo.png', height: 35, width: 35),
+                  const SizedBox(width: 10),
+                  const Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('UNIVERSITAS', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      Text('BHINNEKA TUNGGAL IKA', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    ],
+                  ),
+                ],
+              ),
+              const Icon(Icons.menu, color: Colors.white, size: 28),
+            ],
+          ),
+          const Divider(color: Colors.white38, height: 20),
+          const Text('KARTU RENCANA STUDI', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+          const Text('Fakultas Sains & Teknologi', style: TextStyle(fontSize: 12, color: Colors.white70)),
+          const SizedBox(height: 5),
+          _buildStudentInfoRow('Nama        ', 'M. Reno Novriansyah', isDarkBackground: true),
+          _buildStudentInfoRow('NIM           ', '701230016', isDarkBackground: true),
+          _buildStudentInfoRow('Dosen PA  ', 'Efitra, M.Kom', isDarkBackground: true),
+        ],
       ),
     );
   }
-
+  Widget _buildStudentInfoRow(String label, String value, {bool isDarkBackground = false}) {
+      Color textColor = isDarkBackground ? Colors.white70 : Colors.white; // Menggunakan warna terang untuk latar belakang gelap
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2.0),
+        child: Row(
+          children: [
+            SizedBox(width: 80, child: Text('$label:', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: textColor))),
+            Text(value, style: TextStyle(fontSize: 12, color: textColor)),
+          ],
+        ),
+      );
+  }
   // Widget Baris Mata Kuliah (Menggantikan DataTable Row)
   Widget _buildCourseRow(
       String kode, String mk, String sks, String status, BuildContext context) {
@@ -113,18 +118,16 @@ class KRSPage extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Kartu Rencana Studi (KRS)'),
+        title: const Text('Kartu Rencana Studi (KRS)', style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
         backgroundColor: const Color(0xFF001F3F), 
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Header Mahasiswa
-              _buildStudentHeader(context),
+              buildAcademicHeader(context),
               const Divider(height: 30, thickness: 1.5),
 
               // Judul Utama
@@ -185,7 +188,6 @@ class KRSPage extends StatelessWidget {
               const SizedBox(height: 50),
             ],
           ),
-        ),
       ),
     );
   }
