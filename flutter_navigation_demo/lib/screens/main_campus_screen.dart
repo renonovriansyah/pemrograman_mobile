@@ -15,9 +15,9 @@ class _MainCampusScreenState extends State<MainCampusScreen> {
 
   // Daftar Halaman untuk Bottom Navigation Bar
   final List<Widget> _widgetOptions = <Widget>[
-    const NavigationMenuScreen(), // Index 0: Home/Landing Page
-    const CampusInfoScreen(),      // Index 1: Info Kampus (Kini dengan Tab Bar)
-    const ProfileScreen(),         // Index 2: Profil Mahasiswa
+    NavigationMenuScreen(), // Index 0: Home/Landing Page
+    CampusInfoScreen(),      // Index 1: Info Kampus (Kini dengan Tab Bar)
+    ProfileScreen(),         // Index 2: Profil Mahasiswa
   ];
 
   void _onItemTapped(int index) {

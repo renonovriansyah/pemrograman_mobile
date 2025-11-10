@@ -4,7 +4,7 @@ import 'event_registration_page.dart';
 import 'news_detail_page.dart';
 
 class NavigationMenuScreen extends StatelessWidget {
-  const NavigationMenuScreen({super.key});
+const NavigationMenuScreen({super.key});
 
   // Widget Kustom untuk Tombol Navigasi
   Widget buildNavActionLink(
@@ -41,37 +41,60 @@ class NavigationMenuScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Gambar
           ClipRRect(
             borderRadius: const BorderRadius.vertical(top: Radius.circular(8)),
-            child: Image.network(
-              imageUrl,
+            child: Image.asset(
+              imageUrl, 
               height: 120, 
               width: double.infinity,
               fit: BoxFit.cover,
             ),
           ),
+          
+          // Judul
           Padding(
-            padding: const EdgeInsets.only(left: 12.0, right: 12.0, top: 10.0),
+            padding: const EdgeInsets.only(left: 8.0, right: 8.0, top: 6.0, bottom: 4.0), 
             child: Text(
               title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
             ),
           ),
-          const Divider(height: 1),
+          
+          // Tombol Navigasi (Dibuat lebih rapi tanpa divider vertikal)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 8.0), 
             child: Column(
               children: [
-                TextButton(
-                  onPressed: action1,
-                  style: TextButton.styleFrom(minimumSize: const Size.fromHeight(30)),
-                  child: Text(actionLabel1, style: const TextStyle(fontSize: 12, color: Colors.blue)),
+                // Link 1
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: action1,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero, 
+                      minimumSize: const Size(0, 24), 
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                      alignment: Alignment.centerLeft,
+                    ),
+                    child: Text(actionLabel1, style: TextStyle(fontSize: 12, color: Colors.blue.shade700)),
+                  ),
                 ),
-                TextButton(
-                  onPressed: action2,
-                  style: TextButton.styleFrom(minimumSize: const Size.fromHeight(30)),
-                  child: Text(actionLabel2, style: const TextStyle(fontSize: 12, color: Colors.red)),
+                // Link 2
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    onPressed: action2,
+                    style: TextButton.styleFrom(
+                      padding: EdgeInsets.zero,
+                      minimumSize: const Size(0, 24), 
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap, 
+                      alignment: Alignment.centerLeft,
+                    ),
+                    child: Text(actionLabel2, style: TextStyle(fontSize: 12, color: Colors.red.shade700)),
+                  ),
                 ),
+                const SizedBox(height: 4),
               ],
             ),
           ),
@@ -79,8 +102,8 @@ class NavigationMenuScreen extends StatelessWidget {
       ),
     );
   }
-
-  // --- WIDGET PEMBANTU FOOTER ---
+  
+  // --- WIDGET PEMBANTU FOOTER --- (Tambahkan jika belum ada)
   Widget _buildContactRow(IconData icon, String text) {
       return Padding(
           padding: const EdgeInsets.only(bottom: 5.0),
@@ -105,7 +128,7 @@ class NavigationMenuScreen extends StatelessWidget {
       );
   }
 
-  // --- WIDGET FOOTER UTAMA ---
+  // --- WIDGET FOOTER UTAMA --- (Tambahkan jika belum ada)
   Widget _buildFooter(BuildContext context) {
       final List<Map<String, String>> quickLinks = [
         {'label': 'Home / Beranda', 'route': '/'},
@@ -191,6 +214,7 @@ class NavigationMenuScreen extends StatelessWidget {
       );
   }
 
+
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
@@ -200,11 +224,11 @@ class NavigationMenuScreen extends StatelessWidget {
           // 1. HEADER BANNER BESAR
           Stack(
             children: [
-              Image.network('https://picsum.photos/800/300?random=1', height: 250, width: double.infinity, fit: BoxFit.cover),
+              Image.asset('assets/banner_kampus.png', height: 250, width: double.infinity, fit: BoxFit.cover),
               Container(
                 height: 250,
                 width: double.infinity,
-                color: Colors.black.withAlpha(14), 
+                color: Colors.black.withAlpha(13), 
                 alignment: Alignment.bottomLeft,
                 padding: const EdgeInsets.only(left: 20, bottom: 30),
                 child: const Column(
@@ -228,53 +252,66 @@ class NavigationMenuScreen extends StatelessWidget {
                 const Text('PRODI UNGGULAN', style: TextStyle(fontSize: 22, fontWeight: FontWeight.w800)),
                 const Divider(thickness: 2, endIndent: 200),
                 
-                GridView.count(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
+                GridView.builder(
                   shrinkWrap: true,
                   physics: const NeverScrollableScrollPhysics(),
-                  childAspectRatio: 0.9, 
-                  children: [
-                    // CARD 1: TEKNIK INFORMATIKA
-                    _buildProdiCard(
-                      context,
-                      title: 'Teknik Informatika',
-                      actionLabel1: 'LIHAT KRS (PUSH)',
-                      actionLabel2: 'DETAIL PROFIL (PUSH & DATA)',
-                      imageUrl: 'https://picsum.photos/400/300?random=2',
-                      action1: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const KRSPage()));
-                      },
-                      action2: () {
-                        Navigator.pushNamed(
-                          context, 
-                          '/detail',
-                          arguments: {'nama': 'Budi Santoso', 'npm': '20210001', 'jurusan': 'TI'},
-                        );
-                      },
-                    ),
-
-                    // CARD 2: MANAJEMEN BISNIS
-                    _buildProdiCard(
-                      context,
-                      title: 'Manajemen Bisnis',
-                      actionLabel1: 'CEK PETA KAMPUS (NAMED ROUTE)',
-                      actionLabel2: 'DAFTAR ACARA (POP RESULT)',
-                      imageUrl: 'https://picsum.photos/400/300?random=3',
-                      action1: () {
-                        Navigator.pushNamed(context, '/map', arguments: 'Akses dari Prodi Bisnis');
-                      },
-                      action2: () async {
-                        final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const EventRegistrationPage()));
-                        if (result != null && result is Map && context.mounted) {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(content: Text('Pendaftaran diterima: ${result['nama']}'), backgroundColor: Colors.purple),
+                  itemCount: 2,
+                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 2,
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    mainAxisExtent: 260, // Tinggi tetap untuk kerapihan
+                  ),
+                  itemBuilder: (context, index) {
+                    if (index == 0) {
+                      // CARD 1: TEKNIK INFORMATIKA
+                      return _buildProdiCard(
+                        context,
+                        title: 'Teknik Informatika',
+                        actionLabel1: 'DAFTAR SEMESTER BARU',
+                        actionLabel2: 'LIHAT DATA LULUSAN',
+                        imageUrl: 'assets/informatika.png',
+                        action1: () { Navigator.push(context, MaterialPageRoute(builder: (context) => const KRSPage())); },
+                        action2: () { 
+                          // PUSH & DATA: Mengirim data detail lulusan
+                          Navigator.pushNamed(
+                            context, 
+                            '/detail',
+                            arguments: {
+                              'nama': 'Reno N.', 
+                              'npm': '701230016', 
+                              'jurusan': 'Sistem Informasi'
+                            },
                           );
-                        }
-                      },
-                    ),
-                  ],
+                        },
+                      );
+                    } else {
+                      // CARD 2: MANAJEMEN BISNIS
+                      return _buildProdiCard(
+                        context,
+                        title: 'Manajemen Bisnis',
+                        actionLabel1: 'KONSULTASI KARIR',
+                        actionLabel2: 'AKSES KURIKULUM',
+                        imageUrl: 'assets/bisnis.png',
+                        action1: () { 
+                          // NAMED ROUTE: Simulasi ke Peta Kampus
+                          Navigator.pushNamed(context, '/map', arguments: 'Akses dari Prodi Bisnis'); 
+                        },
+                        action2: () async {
+                          // POP RESULT: Formulir janjian/akses kurikulum
+                          final result = await Navigator.push(context, MaterialPageRoute(builder: (context) => const EventRegistrationPage()));
+                          if (result != null && result is Map && context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Jadwal diterima: ${result['nama']}'),
+                                backgroundColor: Colors.purple,
+                              ),
+                            );
+                          }
+                        },
+                      );
+                    }
+                  },
                 ),
               ],
             ),
@@ -299,7 +336,10 @@ class NavigationMenuScreen extends StatelessWidget {
                       children: [
                         Row(
                           children: [
-                            const CircleAvatar(backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=10'), radius: 25),
+                            CircleAvatar(
+                              radius: 25,
+                              backgroundImage: AssetImage('assets/ryan.png'),
+                            ),
                             const SizedBox(width: 10),
                             Text('Ryan T., Lulusan 2018', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue.shade800)),
                           ],
@@ -333,7 +373,7 @@ class NavigationMenuScreen extends StatelessWidget {
                     contentPadding: const EdgeInsets.all(12),
                     leading: ClipRRect(
                       borderRadius: BorderRadius.circular(4),
-                      child: Image.network('https://picsum.photos/100/100?random=4', width: 60, height: 60, fit: BoxFit.cover),
+                      child: Image.asset('assets/rektor.png', width: 60, height: 60, fit: BoxFit.cover),
                     ),
                     title: const Text('Rektor Sambut Mahasiswa Baru, Semangat Kampus Merdeka!', style: TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: const Text('Rektor UBTI menyambut lebih dari 3000 mahasiswa baru dengan fokus pada inovasi dan program Kampus Merdeka.'),
