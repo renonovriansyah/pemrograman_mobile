@@ -1,9 +1,27 @@
 import 'package:flutter/material.dart';
 
-class ProfileScreen extends StatelessWidget {
+// Definisi data yang bisa diedit
+class UserProfileData {
+  String npm = '701230016';
+  String email = 'reno@uinjambi.ac.id';
+  String phone = '0822-8966-9969';
+  String dosenWali = 'Efitra, M.Kom';
+}
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
-  Widget _buildProfileTile(IconData icon, String label, String value) {
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  final UserProfileData _userData = UserProfileData();
+  bool _isEditing = false;
+  final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
+
+  // --- WIDGET HELPER UMUM ---
+  Widget buildProfileTile(IconData icon, String label, String value) {
     return ListTile(
       leading: Icon(icon, color: Colors.blue.shade800),
       title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
@@ -11,7 +29,88 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGET PEMBANTU FOOTER ---
+  Widget _buildEditableField(String label, IconData icon, String initialValue, void Function(String?)? onSaved) {
+    return ListTile(
+      leading: Icon(icon, color: Colors.blue.shade800),
+      title: Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+      trailing: SizedBox(
+        width: 150,
+        child: TextFormField(
+          initialValue: initialValue,
+          textAlign: TextAlign.end,
+          readOnly: !_isEditing, // HANYA BISA DIEDIT JIKA isEditing = true
+          onSaved: onSaved,
+          style: const TextStyle(fontSize: 15),
+          decoration: InputDecoration(
+            border: _isEditing ? const UnderlineInputBorder() : InputBorder.none,
+            isDense: true,
+            contentPadding: EdgeInsets.zero,
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _toggleEditing() {
+    setState(() {
+      if (_isEditing) {
+        // Jika sudah selesai edit, simpan data
+        if (_formKey.currentState!.validate()) {
+          _formKey.currentState!.save();
+        }
+      }
+      _isEditing = !_isEditing;
+    });
+  }
+  
+  // --- WIDGET HEADER PROFIL BARU ---
+  Widget _buildProfileHeader(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      color: const Color(0xFF001F3F), 
+      padding: const EdgeInsets.all(15.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.start,
+            children: [
+              Image.asset('assets/logo.png', height: 40, width: 40),
+              const SizedBox(width: 10),
+              const Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('UNIVERSITAS', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                  Text('BHINNEKA TUNGGAL IKA', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ],
+          ),
+          const Divider(color: Colors.white38, height: 30),
+
+          // Foto Profil
+          const CircleAvatar(
+            radius: 40,
+            backgroundImage: AssetImage('assets/profil.jpg'), 
+            backgroundColor: Colors.white,
+          ),
+          const SizedBox(height: 10),
+          
+          // Nama dan Jurusan
+          const Text(
+            'M. Reno Novriansyah (Mahasiswa Aktif)',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+          ),
+          const Text(
+            'Sistem Informasi - Angkatan 2023',
+            style: TextStyle(color: Colors.white70, fontSize: 14),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // --- WIDGET FOOTER/DRAWER HELPERS (Disalin dari navigation_menu_screen.dart) ---
   Widget _buildContactRow(IconData icon, String text) {
       return Padding(
           padding: const EdgeInsets.only(bottom: 5.0),
@@ -35,8 +134,7 @@ class ProfileScreen extends StatelessWidget {
           ],
       );
   }
-  
-  // --- WIDGET FOOTER UTAMA ---
+
   Widget _buildFooter(BuildContext context) {
       final List<Map<String, String>> quickLinks = [
         {'label': 'Home / Beranda', 'route': '/'},
@@ -122,7 +220,6 @@ class ProfileScreen extends StatelessWidget {
       );
   }
 
-
   Widget _buildDrawerContent(BuildContext context) {
     return Drawer(
       child: ListView(
@@ -164,63 +261,66 @@ class ProfileScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Profil Mahasiswa'),
+        title: const Text('Profil Mahasiswa', style: TextStyle(fontWeight: FontWeight.bold)),
+        backgroundColor: const Color(0xFF001F3F),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       drawer: _buildDrawerContent(context),
       body: SingleChildScrollView(
         child: Column( 
           children: [ 
+            // 1. HEADER PROFIL BARU
+            _buildProfileHeader(context), 
+
+            // 2. Konten Detail 
             Padding(
               padding: const EdgeInsets.all(20.0),
-              child: Column(
-                children: [
-                    Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          Container(
-                            height: 150,
-                            decoration: BoxDecoration(color: Colors.blue.shade100, borderRadius: BorderRadius.circular(15)),
-                          ),
-                          const Column(
-                            children: [
-                              CircleAvatar(radius: 40, backgroundImage: NetworkImage('https://i.pravatar.cc/150?img=1'), backgroundColor: Colors.white),
-                              SizedBox(height: 10),
-                              Text('John Doe (Mahasiswa Aktif)', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
-                              Text('Teknik Informatika - Angkatan 2021', style: TextStyle(color: Colors.grey)),
-                            ],
-                          ),
-                        ],
-                    ),
-                    const SizedBox(height: 30),
+              child: Form( // Gunakan Form untuk mengelola data yang diedit
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    // Detail Informasi
                     Card(
-                        elevation: 4,
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-                        child: Padding(
-                          padding: const EdgeInsets.all(16.0),
-                          child: Column(
-                            children: [
-                              _buildProfileTile(Icons.person, 'NPM', '20210001'),
-                              const Divider(),
-                              _buildProfileTile(Icons.email, 'Email Kampus', 'john.doe@campus.ac.id'),
-                              const Divider(),
-                              _buildProfileTile(Icons.phone, 'Nomor HP', '0812-3456-7890'),
-                              const Divider(),
-                              _buildProfileTile(Icons.badge, 'Dosen Wali', 'Dr. Budi Santoso, M.Kom'),
-                            ],
-                          ),
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(16.0),
+                        child: Column(
+                          children: [
+                            _buildEditableField('NPM', Icons.person, _userData.npm, (val) => _userData.npm = val ?? _userData.npm),
+                            const Divider(),
+                            _buildEditableField('Email Kampus', Icons.email, _userData.email, (val) => _userData.email = val ?? _userData.email),
+                            const Divider(),
+                            _buildEditableField('Nomor HP', Icons.phone, _userData.phone, (val) => _userData.phone = val ?? _userData.phone),
+                            const Divider(),
+                            _buildEditableField('Dosen Wali', Icons.badge, _userData.dosenWali, (val) => _userData.dosenWali = val ?? _userData.dosenWali),
+                          ],
                         ),
+                      ),
                     ),
+                    
                     const SizedBox(height: 20),
+
+                    // Tombol Aksi Edit/Simpan
                     ElevatedButton.icon(
-                        onPressed: () { /* Aksi Edit */ },
-                        icon: const Icon(Icons.edit),
-                        label: const Text('Edit Data Profil'),
-                        style: ElevatedButton.styleFrom(backgroundColor: Colors.blue.shade800, foregroundColor: Colors.white, padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)),
+                      onPressed: _toggleEditing,
+                      icon: Icon(_isEditing ? Icons.save : Icons.edit),
+                      label: Text(_isEditing ? 'Simpan Perubahan' : 'Edit Data Profil'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: _isEditing ? Colors.green.shade700 : Colors.blue.shade800, 
+                        foregroundColor: Colors.white, 
+                        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 15)
+                      ),
                     ),
-                ],
+                    const SizedBox(height: 40),
+                  ],
+                ),
               ),
             ),
             
+            // 3. FOOTER
             _buildFooter(context), 
           ],
         ),

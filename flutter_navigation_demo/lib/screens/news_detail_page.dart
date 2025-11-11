@@ -38,8 +38,8 @@ class NewsDetailPage extends StatelessWidget { // Nama class tetap AcademicCalen
             // Konten Gambar Berita
             ClipRRect(
               borderRadius: BorderRadius.circular(10),
-              child: Image.network(
-                'https://picsum.photos/800/400?random=5', // Gambar yang lebih besar
+              child: Image.asset(
+                'assets/rektor.png', // Gambar yang lebih besar
                 height: 200,
                 width: double.infinity,
                 fit: BoxFit.cover,
