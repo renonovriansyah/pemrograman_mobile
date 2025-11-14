@@ -7,7 +7,7 @@ import '../widgets/activity_breakdown.dart';
 import 'activities_screen.dart';
 import 'goals_screen.dart';
 import 'profile_screen.dart';
-
+import 'add_activity_screen.dart';
 // =========================================================
 // === BAGIAN 1: KONTEN STATIS HOME SCREEN (HOME CONTENT) ===
 // =========================================================
@@ -89,7 +89,13 @@ class HomeContent extends StatelessWidget {
             child: Container(
               width: 60, height: 60,
               decoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withAlpha(4), blurRadius: 10, offset: const Offset(0, 5))]),
-              child: IconButton(icon: const Icon(Icons.add, color: Colors.white, size: 30), onPressed: () {}),
+              child: IconButton(icon: const Icon(Icons.add, color: Colors.white, size: 30),
+              onPressed: () {
+                Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddActivityScreen()),
+                  );
+              }),
             ),
           ),
         ],
@@ -116,7 +122,7 @@ class _HomeScreenState extends State<HomeScreen> {
     const HomeContent(),
     const ActivitiesScreen(),
     const GoalsScreen(),
-    const ProfileScreen(),
+    const ProfileScreen()
   ];
 
   void _onItemTapped(int index) {
