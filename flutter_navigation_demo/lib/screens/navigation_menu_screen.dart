@@ -122,7 +122,6 @@ const NavigationMenuScreen({super.key});
       return Row(
           children: [
               IconButton(icon: const Icon(Icons.facebook, color: Colors.white, size: 24), onPressed: () {}),
-              IconButton(icon: const Icon(Icons.share, color: Colors.white, size: 24), onPressed: () {}), 
               IconButton(icon: const Icon(Icons.ondemand_video, color: Colors.white, size: 24), onPressed: () {}), 
           ],
       );
@@ -167,20 +166,6 @@ const NavigationMenuScreen({super.key});
                       ),
                       const SizedBox(height: 10),
                       const Text('Mencetak Generasi Unggul untuk Indonesia Maju', style: TextStyle(color: Colors.white70, fontSize: 12)),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('TAUTAN CEPAT', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 10),
-                      ...quickLinks.map((link) => Padding(
-                            padding: const EdgeInsets.only(bottom: 5.0),
-                            child: Text(link['label']!, style: const TextStyle(color: Colors.white70, fontSize: 13)),
-                          )),
                     ],
                   ),
                 ),
