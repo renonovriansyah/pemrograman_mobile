@@ -3,7 +3,9 @@
 import 'package:flutter/material.dart';
 
 class SummarySection extends StatelessWidget {
-  const SummarySection({super.key});
+  final String totalHours;
+
+  const SummarySection({super.key, required this.totalHours});
 
   // Widget Pembantu untuk Kartu Statistik (Total Hours & Streak)
   Widget _buildStatCard({required String title, required String value, required Color valueColor}) {
@@ -76,7 +78,7 @@ class SummarySection extends StatelessWidget {
             children: [
               _buildStatCard(
                 title: 'Total Hours Logged This Week',
-                value: '20.5',
+                value: totalHours,
                 valueColor: const Color(0xFF42A5F5), // Biru
               ),
               const SizedBox(height: 10),

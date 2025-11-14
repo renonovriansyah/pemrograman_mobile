@@ -1,19 +1,11 @@
 // lib/screens/activities_screen.dart
 
 import 'package:flutter/material.dart';
+import '../models/activity.dart'; // Import Model
 
 class ActivitiesScreen extends StatelessWidget {
-  const ActivitiesScreen({super.key});
-
-  // Data dummy untuk daftar aktivitas (serupa dengan data di Home Screen)
-  final List<Map<String, dynamic>> activities = const [
-    {'category': 'Studying', 'title': 'Studied Calculus', 'duration': '9.0 h', 'date': 'Today', 'color': Color(0xFF42A5F5), 'icon': Icons.menu_book}, // Biru
-    {'category': 'Reading', 'title': 'Read "Dune"', 'duration': '0.5 h', 'date': 'Today', 'color': Color(0xFFE64A19), 'icon': Icons.book}, // Oranye Tua
-    {'category': 'Workout', 'title': 'Gym Session', 'duration': '1.0 h', 'date': 'Yesterday', 'color': Color(0xFF66BB6A), 'icon': Icons.directions_run}, // Hijau
-    {'category': 'Creative', 'title': 'Finished Sketch', 'duration': '1.5 h', 'date': 'Yesterday', 'color': Color(0xFF9C27B0), 'icon': Icons.draw}, // Ungu
-    {'category': 'Studying', 'title': 'Prepared Physics', 'duration': '3.0 h', 'date': 'Mon, 13/11', 'color': Color(0xFF42A5F5), 'icon': Icons.menu_book},
-    {'category': 'Reading', 'title': 'Journal Article', 'duration': '0.7 h', 'date': 'Mon, 13/11', 'color': Color(0xFFE64A19), 'icon': Icons.book},
-  ];
+  final List<Activity> activities; 
+  const ActivitiesScreen({super.key, required this.activities});
 
   @override
   Widget build(BuildContext context) {
@@ -26,16 +18,16 @@ class ActivitiesScreen extends StatelessWidget {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Bar Filter/Sort (Sinkron dengan gaya modern)
+          // Bar Filter/Sort
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 10.0),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _buildFilterChip(context, 'Today', true),
-                _buildFilterChip(context, 'Last 7 Days', false),
+                _buildFilterChip(context, 'All Time', true), // Diubah menjadi All Time
                 _buildFilterChip(context, 'Studying', false),
-                const Icon(Icons.tune, color: Colors.grey), // Icon filter tambahan
+                _buildFilterChip(context, 'Reading', false),
+                const Icon(Icons.tune, color: Colors.grey),
               ],
             ),
           ),
@@ -43,20 +35,21 @@ class ActivitiesScreen extends StatelessWidget {
           
           // Daftar Aktivitas
           Expanded(
-            child: ListView.builder(
-              itemCount: activities.length,
-              itemBuilder: (context, index) {
-                final activity = activities[index];
-                return _buildActivityListItem(activity);
-              },
-            ),
+            child: activities.isEmpty
+              ? const Center(child: Text("Belum ada aktivitas yang dicatat."))
+              : ListView.builder(
+                  itemCount: activities.length,
+                  itemBuilder: (context, index) {
+                    final activity = activities[index];
+                    return _buildActivityListItem(activity);
+                  },
+                ),
           ),
         ],
       ),
     );
   }
 
-  // Widget Pembantu untuk Chip Filter (Gaya seragam)
   Widget _buildFilterChip(BuildContext context, String label, bool isSelected) {
     return Chip(
       label: Text(
@@ -76,33 +69,30 @@ class ActivitiesScreen extends StatelessWidget {
     );
   }
 
-  // Widget Pembantu untuk Setiap Item Daftar (Gaya seragam dengan Home Screen)
-  Widget _buildActivityListItem(Map<String, dynamic> activity) {
+  Widget _buildActivityListItem(Activity activity) {
     return ListTile(
       leading: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: activity['color'].withOpacity(0.15), // Latar belakang transparan
+          color: activity.color.withAlpha(4),
           borderRadius: BorderRadius.circular(10),
         ),
-        child: Icon(activity['icon'] as IconData, color: activity['color'], size: 24),
+        child: Icon(activity.icon, color: activity.color, size: 24),
       ),
-      title: Text(activity['title'] as String, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-      subtitle: Text('${activity['category']} • ${activity['date']}'),
+      title: Text(activity.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+      subtitle: Text('${activity.category} • ${activity.date.day}/${activity.date.month}'),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            activity['duration'] as String,
+            '${activity.duration.toStringAsFixed(1)} h',
             style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87, fontSize: 15),
           ),
           const Text('logged', style: TextStyle(fontSize: 10, color: Colors.grey)),
         ],
       ),
-      onTap: () {
-        // Fungsionalitas: Menampilkan detail aktivitas
-      },
+      onTap: () {},
     );
   }
 }

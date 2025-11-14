@@ -2,7 +2,6 @@
 
 import 'package:flutter/material.dart';
 
-// Class yang mendefinisikan struktur data sebuah aktivitas
 class Activity {
   final String title;
   final double duration; // Durasi dalam jam
