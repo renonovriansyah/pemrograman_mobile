@@ -24,7 +24,7 @@ class HomeContent extends StatelessWidget {
     return AppBar(
       backgroundColor: Colors.white,
       elevation: 0,
-      title: const Text('Student Flow', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 24)),
+      title: const Text('Activity Tracker', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 24)),
       leading: const Padding(
         padding: EdgeInsets.only(left: 16.0),
         child: CircleAvatar(
@@ -48,7 +48,7 @@ class HomeContent extends StatelessWidget {
         
         // Cek jika ada aktivitas
         if (recent.isEmpty)
-          const Center(child: Text("Belum ada aktivitas yang dicatat.")),
+          const Center(child: Text("No activity has been recorded yet.")),
         
         // Buat ListTile untuk setiap aktivitas
         ...recent.map((activity) {
@@ -132,24 +132,7 @@ class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
   // DATA DINAMIS DISIMPAN DI SINI
-  List<Activity> activities = [
-    Activity(
-      title: 'Studied Flutter',
-      duration: 2.5,
-      category: 'Studying',
-      date: DateTime.now().subtract(const Duration(hours: 3)),
-      color: Activity.getCategoryInfo('Studying')['color'],
-      icon: Activity.getCategoryInfo('Studying')['icon'],
-    ),
-     Activity(
-      title: 'Read Atomic Habits',
-      duration: 0.5,
-      category: 'Reading',
-      date: DateTime.now().subtract(const Duration(days: 1)),
-      color: Activity.getCategoryInfo('Reading')['color'],
-      icon: Activity.getCategoryInfo('Reading')['icon'],
-    ),
-  ];
+  List<Activity> activities = [];
 
   // FUNGSI UNTUK MENAMBAH DATA BARU (CALLBACK)
   void _addActivity(Activity activity) {
