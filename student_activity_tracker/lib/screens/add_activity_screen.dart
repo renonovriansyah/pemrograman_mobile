@@ -85,7 +85,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
               const SizedBox(height: 15),
 
               TextFormField(
-                decoration: InputDecoration(labelText: 'Title / Subject', hintText: 'e.g., Studied Flutter Architecture', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), prefixIcon: const Icon(Icons.title)),
+                decoration: InputDecoration(labelText: 'Title / Subject', hintText: 'Ex: Studied Flutter Architecture', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), prefixIcon: const Icon(Icons.title)),
                 validator: (value) => (value == null || value.isEmpty) ? 'Please enter a title.' : null,
                 onSaved: (value) => _title = value!,
               ),
@@ -93,7 +93,7 @@ class _AddActivityScreenState extends State<AddActivityScreen> {
 
               TextFormField(
                 keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                decoration: InputDecoration(labelText: 'Duration (Hours)', hintText: 'e.g., 2.5', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), prefixIcon: const Icon(Icons.timer)),
+                decoration: InputDecoration(labelText: 'Duration (Hours)', hintText: 'Ex: 2.5', border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)), prefixIcon: const Icon(Icons.timer)),
                 validator: (value) => (value == null || double.tryParse(value) == null || double.parse(value) <= 0) ? 'Please enter a valid duration.' : null,
                 onSaved: (value) => _duration = double.parse(value!),
               ),

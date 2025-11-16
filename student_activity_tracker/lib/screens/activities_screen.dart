@@ -36,7 +36,7 @@ class ActivitiesScreen extends StatelessWidget {
           // Daftar Aktivitas
           Expanded(
             child: activities.isEmpty
-              ? const Center(child: Text("Belum ada aktivitas yang dicatat."))
+              ? const Center(child: Text("No activity has been recorded yet."))
               : ListView.builder(
                   itemCount: activities.length,
                   itemBuilder: (context, index) {
@@ -80,7 +80,7 @@ class ActivitiesScreen extends StatelessWidget {
         child: Icon(activity.icon, color: activity.color, size: 24),
       ),
       title: Text(activity.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-      subtitle: Text('${activity.category} • ${activity.date.day}/${activity.date.month}'),
+      subtitle: Text('${activity.category} • ${activity.date.day}/${activity.date.month}/${activity.date.year}'),
       trailing: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         crossAxisAlignment: CrossAxisAlignment.end,

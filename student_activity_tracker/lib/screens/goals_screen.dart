@@ -1,134 +1,121 @@
 // lib/screens/goals_screen.dart
 
 import 'package:flutter/material.dart';
+import '../models/activity.dart';
+import '../models/goal.dart';
 
 class GoalsScreen extends StatelessWidget {
-  const GoalsScreen({super.key});
+  // GoalsScreen kini menerima 2 List: Activities (untuk hitung progres) dan Goals (untuk tampilkan target)
+  final List<Activity> activities; 
+  final List<Goal> goals;
+  final VoidCallback onNavigateToAddGoal;
 
-  // Data dummy untuk Weekly Goals
-  final List<Map<String, dynamic>> weeklyGoals = const [
-    {'title': 'Study Calculus', 'target': 10.0, 'progress': 7.5, 'unit': 'hours', 'color': Color(0xFF42A5F5)},
-    {'title': 'Read Literature', 'target': 3.0, 'progress': 3.0, 'unit': 'books', 'color': Color(0xFF66BB6A)},
-  ];
+  const GoalsScreen({
+    super.key,
+    required this.activities,
+    required this.goals,
+    required this.onNavigateToAddGoal,
+  });
 
-  // Data dummy untuk Monthly Goals
-  final List<Map<String, dynamic>> monthlyGoals = const [
-    {'title': 'Finish Project', 'target': 1.0, 'progress': 0.8, 'unit': 'project', 'color': Color(0xFFFF7043)},
-    {'title': 'Workout Sessions', 'target': 12.0, 'progress': 5.0, 'unit': 'times', 'color': Color(0xFF9C27B0)},
-  ];
+  // Fungsi Pembantu: Menghitung total jam yang sudah dicatat untuk sebuah kategori
+  double _calculateProgressHours(String category) {
+    // Di sini, kita simulasikan target per minggu (misalnya, dari awal minggu hingga sekarang)
+    // Untuk lebih akurat, Anda perlu memfilter activity berdasarkan rentang tanggal.
+    final today = DateTime.now();
+    final startOfWeek = today.subtract(Duration(days: today.weekday - 1));
+
+    return activities
+        .where((a) => a.category == category)
+        .where((a) => a.date.isAfter(startOfWeek)) // Filter aktivitas minggu ini
+        .fold(0.0, (sum, item) => sum + item.duration);
+  }
+
+  // Widget untuk menampilkan kartu Goal
+  Widget _buildGoalCard(Goal goal) {
+    final achievedHours = _calculateProgressHours(goal.category);
+    final progress = achievedHours / goal.targetHours;
+    final progressValue = progress.clamp(0.0, 1.0); // Pastikan nilai antara 0.0 dan 1.0
+    final isCompleted = achievedHours >= goal.targetHours;
+
+    return Card(
+      margin: const EdgeInsets.only(bottom: 15),
+      elevation: 3,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+      child: Padding(
+        padding: const EdgeInsets.all(15.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(goal.icon, color: goal.color),
+                const SizedBox(width: 8),
+                Text(goal.title, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                const Spacer(),
+                if (isCompleted)
+                  const Icon(Icons.check_circle, color: Colors.green, size: 24),
+              ],
+            ),
+            const SizedBox(height: 10),
+            
+            Text(
+              'Target: ${goal.targetHours.toStringAsFixed(1)} hours per week',
+              style: const TextStyle(fontSize: 14, color: Colors.grey),
+            ),
+            const SizedBox(height: 10),
+
+            LinearProgressIndicator(
+              value: progressValue,
+              backgroundColor: Colors.grey.shade300,
+              color: goal.color,
+              minHeight: 10,
+              borderRadius: BorderRadius.circular(5),
+            ),
+            const SizedBox(height: 5),
+
+            Text(
+              '${achievedHours.toStringAsFixed(1)} / ${goal.targetHours.toStringAsFixed(1)} hours logged (${(progressValue * 100).toStringAsFixed(0)}%)',
+              style: TextStyle(fontSize: 12, color: isCompleted ? Colors.green.shade700 : Colors.blue.shade700, fontWeight: FontWeight.w600),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('My Goals', style: TextStyle(fontWeight: FontWeight.bold)),
+        title: const Text('Weekly Goals', style: TextStyle(fontWeight: FontWeight.bold)),
         backgroundColor: Colors.white,
         elevation: 0,
+        // Pastikan tidak ada actions di sini
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            // --- Weekly Goals Section ---
-            _buildGoalSectionTitle('Weekly Goals'),
-            const SizedBox(height: 10),
-            ...weeklyGoals.map((goal) => _buildGoalCard(goal)),
-            
-            const SizedBox(height: 30),
-
-            // --- Monthly Goals Section ---
-            _buildGoalSectionTitle('Monthly Goals'),
-            const SizedBox(height: 10),
-            ...monthlyGoals.map((goal) => _buildGoalCard(goal)),
-
-            const SizedBox(height: 50),
-            
-            // --- Add New Goal Button ---
-            Center(
-              child: OutlinedButton.icon(
-                onPressed: () {},
-                icon: const Icon(Icons.add_circle_outline, color: Colors.blue),
-                label: const Text('Add New Goal', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                  side: const BorderSide(color: Colors.blue, width: 1.5),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+      body: goals.isEmpty
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(30.0),
+                child: Text(
+                  "Belum ada target yang dibuat. Tambahkan Goal untuk mulai melacak progres mingguanmu!",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
                 ),
               ),
+            )
+          : ListView(
+              padding: const EdgeInsets.all(20.0),
+              children: goals.map((goal) => _buildGoalCard(goal)).toList(),
             ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  // Widget Pembantu untuk Judul Bagian
-  Widget _buildGoalSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.black87),
-    );
-  }
-
-  // Widget Pembantu untuk Kartu Goal (Sinkron dengan gaya Card Home Screen)
-  Widget _buildGoalCard(Map<String, dynamic> goal) {
-    final double target = goal['target'];
-    final double progress = goal['progress'];
-    final double percentage = progress / target;
-    final Color color = goal['color'];
-    final bool isCompleted = progress >= target;
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  goal['title'] as String,
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                isCompleted
-                    ? const Icon(Icons.check_circle, color: Colors.green, size: 24)
-                    : Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withAlpha(3),
-                          borderRadius: BorderRadius.circular(5),
-                        ),
-                        child: Text(
-                          '${((percentage * 100)).toStringAsFixed(0)}%',
-                          style: TextStyle(color: color, fontWeight: FontWeight.bold),
-                        ),
-                      ),
-              ],
-            ),
-            const SizedBox(height: 8),
-
-            // Target vs Progress
-            Text(
-              '${progress.toStringAsFixed(1)} / ${target.toStringAsFixed(1)} ${goal['unit']}',
-              style: const TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-            const SizedBox(height: 15),
-
-            // Progress Bar
-            LinearProgressIndicator(
-              value: percentage,
-              backgroundColor: Colors.grey.shade200,
-              color: color,
-              minHeight: 8,
-              borderRadius: BorderRadius.circular(10),
-            ),
-          ],
-        ),
+            
+      // FLOATING ACTION BUTTON UNTUK GOALS
+      floatingActionButton: FloatingActionButton(
+          // FUNGSI INI AKAN MEMANGGIL _navigateToAddGoal DARI HOMESCREEN
+          onPressed: onNavigateToAddGoal, 
+          // Style sama persis dengan Activities
+          backgroundColor: Colors.blue,
+          shape: const CircleBorder(), 
+          child: const Icon(Icons.add, color: Colors.white, size: 30),
       ),
     );
   }

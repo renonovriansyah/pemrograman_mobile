@@ -7,9 +7,11 @@ import '../widgets/activity_breakdown.dart';
 import 'activities_screen.dart';
 import 'add_activity_screen.dart';
 import 'goals_screen.dart';
+import '../models/activity.dart';
+import '../models/goal.dart';
+import 'add_goal_screen.dart';
+import '../models/user.dart';
 import 'profile_screen.dart';
-import '../models/activity.dart'; // Import Model
-
 // =========================================================
 // === BAGIAN 1: KONTEN STATIS HOME SCREEN (HOME CONTENT) ===
 // Dibuat Statis untuk kerapihan dan menerima data dinamis
@@ -133,6 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // DATA DINAMIS DISIMPAN DI SINI
   List<Activity> activities = [];
+  List<Goal> goals = [];
 
   // FUNGSI UNTUK MENAMBAH DATA BARU (CALLBACK)
   void _addActivity(Activity activity) {
@@ -148,15 +151,45 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
+  // FUNGSI BARU: MENAMBAH GOAL (CALLBACK)
+  void _addGoal(Goal goal) {
+    setState(() {
+      goals.add(goal);
+    });
+  }
+
+  // FUNGSI NAVIGASI BARU: PINDAH KE ADD GOAL SCREEN
+  void navigateToAddGoal(BuildContext context) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        // Meneruskan fungsi _addGoal ke AddGoalScreen
+        builder: (context) => AddGoalScreen(onAddGoal: _addGoal), 
+      ),
+    );
+  }
+
+  User _currentUser = User(
+    name: 'Reno Mulyadi',
+    email: 'reno.mulyadi@student.edu',
+    avatarLetter: 'R',
+    avatarColor: const Color(0xFF42A5F5), // Biru Muda
+  );
+
+  // Fungsi untuk update data user (Callback)
+  void updateUser(User updatedUser) {
+    setState(() {
+      _currentUser = updatedUser;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final List<Widget> widgetOptions = <Widget>[
-      // Mengirim data dinamis ke HomeContent
       HomeContent(activities: activities),      
-      // Mengirim data dinamis ke ActivitiesScreen
       ActivitiesScreen(activities: activities), 
-      const Center(child: Text('Goals Screen')), 
-      const Center(child: Text('Profile Screen')),
+      GoalsScreen(activities: activities, goals: goals, onNavigateToAddGoal: () => navigateToAddGoal(context),),
+      ProfileScreen(currentUser: _currentUser, onUpdateUser: updateUser, activities: activities,),
     ];
     
     return Scaffold(
@@ -165,31 +198,26 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           // Widget yang dipilih mengisi seluruh layar
           widgetOptions.elementAt(_selectedIndex), 
-          
-          // Floating Action Button
-          Positioned(
-            bottom: 15, 
-            right: 20,
-            child: Container(
-              width: 60, height: 60,
-              decoration: BoxDecoration(color: Colors.blue, shape: BoxShape.circle, boxShadow: [BoxShadow(color: Colors.black.withAlpha(6), blurRadius: 10, offset: const Offset(0, 5))]),
-              child: IconButton(
-                icon: const Icon(Icons.add, color: Colors.white, size: 30),
-                onPressed: () {
-                  // MENGIRIM CALLBACK KE ADD ACTIVITY SCREEN
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => AddActivityScreen(onAddActivity: _addActivity),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
         ],
       ),
       
+      floatingActionButton: _selectedIndex == 1 // HANYA tampilkan jika tab Activities aktif
+        ? FloatingActionButton(
+            onPressed: () {
+              // Aksi yang sama dengan FAB lama
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddActivityScreen(onAddActivity: _addActivity),
+                ),
+              );
+            },
+            backgroundColor: Colors.blue,
+            shape: const CircleBorder(), // Menggunakan CircleBorder untuk bentuk bulat
+            child: const Icon(Icons.add, color: Colors.white, size: 30),
+          )
+        : null,
+
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: Colors.white,
         type: BottomNavigationBarType.fixed,
