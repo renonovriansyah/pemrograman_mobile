@@ -29,7 +29,7 @@ class ReportScreen extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 1,
-                  child: _buildProductivityChart(), // Placeholder
+                  child: _buildProductivityChart(context), 
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -89,42 +89,69 @@ class ReportScreen extends StatelessWidget {
     );
   }
   
-  // 1. Produktivitas Mingguan (Grafik Batang) - Placeholder
-  Widget _buildProductivityChart() {
-    return _buildChartCard(
-      title: 'Produktivitas Mingguan',
-      content: BarChart(
-        BarChartData(
-          // Placeholder data 
-          barGroups: List.generate(7, (i) => BarChartGroupData(
-            x: i, 
-            barRods: [
-              BarChartRodData(
-                toY: i * 50 + 100 + (i == 5 ? 200 : 0), 
-                color: i == 6 ? Colors.orange : Colors.teal,
-                width: 16,
-              )
-            ]
-          )),
-          titlesData: FlTitlesData(
-            show: true, 
-            bottomTitles: AxisTitles(
-              sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
-                const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
-                return SideTitleWidget(
-                  axisSide: meta.axisSide,
-                  child: Text(days[value.toInt()]),
-                );
-              })
+  // 1. Produktivitas Mingguan (Grafik Batang) - REAL-TIME
+  Widget _buildProductivityChart(BuildContext context) { 
+    final activityProvider = Provider.of<ActivityProvider>(context);
+
+    return StreamBuilder<List<Activity>>(
+      stream: activityProvider.activitiesStream,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return _buildChartCard(
+            title: 'Produktivitas Mingguan',
+            content: const Center(child: CircularProgressIndicator()),
+          );
+        }
+        
+        final activities = snapshot.data ?? [];
+        final weeklyData = activityProvider.calculateWeeklyProductivity(activities);
+
+        // Cari jam maksimum untuk skala sumbu Y (FIXED: Batas minimum 1.0)
+        final maxY = weeklyData.isEmpty 
+            ? 5.0 
+            : (weeklyData.map((e) => e.durationHours).reduce((a, b) => a > b ? a : b) * 1.2).clamp(1.0, double.infinity); 
+            // Batas minimal 1.0 mencegah interval = 0
+
+        return _buildChartCard(
+          title: 'Produktivitas Mingguan',
+          content: BarChart(
+            BarChartData(
+              maxY: maxY,
+              barGroups: weeklyData.map((data) => BarChartGroupData(
+                x: data.dayIndex - 1, 
+                barRods: [
+                  BarChartRodData(
+                    toY: data.durationHours,
+                    color: data.durationHours >= (maxY / 2.5) ? Colors.teal : Colors.blueGrey.shade400,
+                    width: 16,
+                  )
+                ]
+              )).toList(),
+              titlesData: FlTitlesData(
+                show: true, 
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
+                    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+                    return SideTitleWidget(
+                      axisSide: meta.axisSide,
+                      child: Text(days[value.toInt()]),
+                    );
+                  })
+                ),
+                leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, interval: maxY / 5)),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+              ),
+              gridData: const FlGridData(show: true, drawVerticalLine: false),
+              borderData: FlBorderData(show: false),
             ),
-            leftTitles: const AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40)),
-            topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-            rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
           ),
-          gridData: const FlGridData(show: true, drawVerticalLine: false),
-          borderData: FlBorderData(show: false),
-        ),
-      ),
+          legend: Padding(
+            padding: const EdgeInsets.only(top: 10.0),
+            child: Text('Total aktivitas terakhir: ${activities.length}'),
+          ),
+        );
+      }
     );
   }
 
@@ -168,7 +195,6 @@ class ReportScreen extends StatelessWidget {
         }
         
         final activities = snapshot.data ?? [];
-        // Menggunakan fungsi perhitungan yang ada di provider
         final dataPoints = activityProvider.calculateTimeDistribution(activities); 
         final totalDuration = dataPoints.fold(0.0, (sum, item) => sum + item.durationMinutes);
         
@@ -186,16 +212,14 @@ class ReportScreen extends StatelessWidget {
             PieChartData(
               sectionsSpace: 2,
               centerSpaceRadius: 40,
-              sections: dataPoints.map((data) {
-                final percentage = (data.durationMinutes / totalDuration) * 100;
-                return PieChartSectionData(
+              sections: dataPoints.map((data) => PieChartSectionData(
                   value: data.durationMinutes,
                   color: data.color,
-                  title: '${percentage.toStringAsFixed(0)}%',
+                  title: '${(data.durationMinutes / totalDuration * 100).toStringAsFixed(0)}%',
                   radius: 80,
                   titleStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-                );
-              }).toList(),
+                )
+              ).toList(),
               borderData: FlBorderData(show: false),
             ),
           ),

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import '../models/activity.dart'; // Wajib: Activity Model
-import '../models/activity_stats.dart'; // Wajib: ActivityStats Model
+import '../models/activity.dart';
+import '../models/activity_stats.dart'; 
 
-// Tipe data sederhana untuk distribusi Pie Chart
+// --- MODEL DATA UNTUK GRAFIK ---
+
 class PieChartDataPoint {
   final String category;
   final double durationMinutes;
@@ -12,24 +13,32 @@ class PieChartDataPoint {
   PieChartDataPoint(this.category, this.durationMinutes, this.color);
 }
 
+class WeeklyChartData {
+  final int dayIndex; // 1=Senin, 7=Minggu
+  final double durationHours;
+
+  WeeklyChartData(this.dayIndex, this.durationHours);
+}
+
+// --- CLASS UTAMA PROVIDER ---
+
 class ActivityProvider with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
   final String _userId = 'user_abc'; 
+  String get currentUserId => _userId;
 
-  // --- STREAM DATA FIREBASE (READ STABIL) ---
+  // --- STREAM DATA FIREBASE (FIXED: Mengambil data HARI INI) ---
   Stream<List<Activity>> get activitiesStream {
     final today = DateTime.now();
-    // Tentukan awal hari ini (00:00:00)
     final startOfToday = DateTime(today.year, today.month, today.day);
-    // Tentukan awal hari besok (23:59:59 hari ini)
     final endOfToday = startOfToday.add(const Duration(days: 1));
-
-    // Kueri menggunakan rentang waktu (wajib untuk data hari ini)
+    
+    // Kueri dengan filter rentang waktu HARI INI
     return _db
         .collection('activities')
         .where('userId', isEqualTo: _userId)
-        .where('startTime', isGreaterThanOrEqualTo: startOfToday) // Mulai dari 00:00:00
-        .where('startTime', isLessThan: endOfToday) // Berakhir sebelum 00:00:00 besok
+        .where('startTime', isGreaterThanOrEqualTo: startOfToday)
+        .where('startTime', isLessThan: endOfToday)
         .orderBy('startTime', descending: false)
         .withConverter<Activity>(
           fromFirestore: Activity.fromFirestore,
@@ -39,15 +48,12 @@ class ActivityProvider with ChangeNotifier {
         .map((snapshot) => snapshot.docs.map((doc) => doc.data()).toList());
   }
 
-  // --- CRUD OPERATIONS (DIPERBAIKI UNTUK isImportant) ---
-
+  // --- CRUD OPERATIONS ---
   Future<void> addActivity(Activity activity) async {
-    // Pastikan ID pengguna disertakan dalam data yang disimpan
     await _db.collection('activities').doc(activity.id).set(activity.toFirestore());
   }
 
   Future<void> updateActivity(Activity activity) async {
-    // Menggunakan toFirestore() untuk memastikan semua field (termasuk isImportant) terupdate
     await _db.collection('activities').doc(activity.id).update(activity.toFirestore());
   }
 
@@ -55,12 +61,10 @@ class ActivityProvider with ChangeNotifier {
     await _db.collection('activities').doc(id).delete();
   }
 
-
   // --- FUNGSI REPORTING & HELPER ---
 
   // 1. Mendapatkan Warna untuk Tipe Aktivitas
   Color getColorForType(ActivityType type) { 
-    // [FIXED] Fungsi harus berada di dalam class dan menangani semua tipe
     switch (type) {
       case ActivityType.call:
         return Colors.green;
@@ -73,17 +77,19 @@ class ActivityProvider with ChangeNotifier {
     }
   }
 
-  // 2. Menghitung Statistik Durasi (untuk Home Screen Bar)
+  // 2. Menghitung Statistik Durasi (Home Screen Bar)
   List<ActivityStats> calculateDailyStats(List<Activity> activities) {
+    // Karena stream sudah difilter untuk hari ini, kita tidak perlu membandingkan tanggal secara lokal.
     final Map<ActivityType, Duration> typeDurations = {};
+    
     for (var type in ActivityType.values) {
       typeDurations[type] = Duration.zero;
     }
+    
     for (var activity in activities) {
-      // Hanya hitung aktivitas hari ini 
-        final duration = activity.endTime.difference(activity.startTime);
-        typeDurations[activity.type] = typeDurations[activity.type]! + duration;
-      }
+      final duration = activity.endTime.difference(activity.startTime);
+      typeDurations[activity.type] = typeDurations[activity.type]! + duration;
+    }
     
     return typeDurations.entries.map((entry) {
       final durationHours = entry.value.inMinutes / 60.0;
@@ -96,10 +102,9 @@ class ActivityProvider with ChangeNotifier {
       );
     }).where((stat) => stat.durationHours > 0).toList();
   }
-  
-  // 3. Menghitung Distribusi Waktu untuk Pie Chart (Kerja vs Lainnya)
+
+  // 3. Menghitung Distribusi Waktu untuk Pie Chart
   List<PieChartDataPoint> calculateTimeDistribution(List<Activity> activities) {
-    // [METHOD HILANG DIKOMBINASIKAN DI SINI]
     double totalWorkMinutes = 0;
     double totalOtherMinutes = 0; 
 
@@ -121,5 +126,39 @@ class ActivityProvider with ChangeNotifier {
       PieChartDataPoint("Kerja (Work/Call)", totalWorkMinutes, Colors.blue),
       PieChartDataPoint("Lainnya (Workout/Routine)", totalOtherMinutes, Colors.orange),
     ];
+  }
+  
+  // 4. Menghitung Produktivitas Mingguan (untuk Report Screen Bar Chart)
+  List<WeeklyChartData> calculateWeeklyProductivity(List<Activity> activities) {
+    Map<int, Duration> dailyDurations = {}; // Key: Hari (1-7)
+    
+    final now = DateTime.now();
+    final sevenDaysAgo = DateTime(now.year, now.month, now.day).subtract(const Duration(days: 7));
+    
+    // Filter data untuk 7 hari terakhir
+    final recentActivities = activities.where((a) => a.startTime.isAfter(sevenDaysAgo)).toList();
+
+    for (var activity in recentActivities) {
+      final dayOfWeek = activity.startTime.weekday; 
+      final duration = activity.endTime.difference(activity.startTime);
+
+      dailyDurations.update(
+        dayOfWeek,
+        (existingDuration) => existingDuration + duration,
+        ifAbsent: () => duration,
+      );
+    }
+
+    // Buat daftar 7 hari dengan data dari Durasi Harian
+    List<WeeklyChartData> chartData = [];
+    for (int i = 1; i <= 7; i++) { 
+      final duration = dailyDurations[i] ?? Duration.zero;
+      chartData.add(WeeklyChartData(
+        i, 
+        duration.inMinutes / 60.0,
+      ));
+    }
+
+    return chartData;
   }
 }
