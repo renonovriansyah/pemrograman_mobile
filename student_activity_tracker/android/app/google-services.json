@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "282784319034",
+    "project_id": "utsmobile-28e88",
+    "storage_bucket": "utsmobile-28e88.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:282784319034:android:6c1421c1c881ede9489703",
+        "android_client_info": {
+          "package_name": "com.example.student_activity_tracker"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBaB97SxfvHzB2fc32Sez3bcFb8trKqPAg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

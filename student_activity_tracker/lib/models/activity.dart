@@ -1,37 +1,55 @@
 // lib/models/activity.dart
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:uuid/uuid.dart';
 
-import 'package:flutter/material.dart';
+enum ActivityType { call, deepWork, workout, routine }
 
 class Activity {
-  final String title;
-  final double duration; // Durasi dalam jam
-  final String category;
-  final DateTime date;
-  final Color color;
-  final IconData icon;
+  final String id;
+  String title;
+  DateTime startTime;
+  DateTime endTime;
+  ActivityType type;
+  bool isCompleted;
+  final String userId = 'user_abc'; // Ganti dengan ID user yang sebenarnya
 
   Activity({
+    String? id,
     required this.title,
-    required this.duration,
-    required this.category,
-    required this.date,
-    required this.color,
-    required this.icon,
-  });
+    required this.startTime,
+    required this.endTime,
+    required this.type,
+    this.isCompleted = false,
+  }) : id = id ?? const Uuid().v4();
 
-  // Fungsi pembantu untuk menentukan warna dan ikon berdasarkan kategori
-  static Map<String, dynamic> getCategoryInfo(String category) {
-    switch (category) {
-      case 'Studying':
-        return {'color': const Color(0xFF42A5F5), 'icon': Icons.menu_book};
-      case 'Reading':
-        return {'color': const Color(0xFFE64A19), 'icon': Icons.book};
-      case 'Workout':
-        return {'color': const Color(0xFF66BB6A), 'icon': Icons.directions_run};
-      case 'Creative':
-        return {'color': const Color(0xFF9C27B0), 'icon': Icons.draw};
-      default: // Others
-        return {'color': Colors.grey, 'icon': Icons.category};
-    }
+  // Konversi dari Firebase Map
+  factory Activity.fromFirestore(
+      DocumentSnapshot<Map<String, dynamic>> snapshot,
+      SnapshotOptions? options,
+  ) {
+    final data = snapshot.data();
+    return Activity(
+      id: snapshot.id,
+      title: data?['title'] ?? '',
+      startTime: (data?['startTime'] as Timestamp).toDate(),
+      endTime: (data?['endTime'] as Timestamp).toDate(),
+      type: ActivityType.values.firstWhere(
+          (e) => e.toString().split('.').last == data?['type'],
+          orElse: () => ActivityType.routine),
+      isCompleted: data?['isCompleted'] ?? false,
+    );
+  }
+
+  // Konversi ke Firebase Map
+  Map<String, dynamic> toFirestore() {
+    return {
+      "title": title,
+      "startTime": Timestamp.fromDate(startTime),
+      "endTime": Timestamp.fromDate(endTime),
+      "type": type.toString().split('.').last, // Simpan sebagai string
+      "isCompleted": isCompleted,
+      "userId": userId,
+      "createdAt": FieldValue.serverTimestamp(),
+    };
   }
 }

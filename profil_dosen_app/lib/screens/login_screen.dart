@@ -118,7 +118,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       // 1. Jurusan sekarang di atas
                       // ignore: deprecated_member_use_from_same_package
                       DropdownButtonFormField<String>(
-                        value: _selectedJurusan,
+                        initialValue: _selectedJurusan,
                         items: semuaJurusan.map((jurusan) => DropdownMenuItem(
                           value: jurusan,
                           child: Text(jurusan),

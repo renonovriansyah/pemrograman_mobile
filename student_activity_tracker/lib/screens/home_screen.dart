@@ -1,239 +1,131 @@
 // lib/screens/home_screen.dart
-
 import 'package:flutter/material.dart';
-import '../widgets/summary_section.dart'; 
-import '../widgets/quick_log_section.dart'; 
-import '../widgets/activity_breakdown.dart';
-import 'activities_screen.dart';
-import 'add_activity_screen.dart';
-import 'goals_screen.dart';
+import 'package:provider/provider.dart';
 import '../models/activity.dart';
-import '../models/goal.dart';
-import 'add_goal_screen.dart';
-import '../models/user.dart';
-import 'profile_screen.dart';
-// =========================================================
-// === BAGIAN 1: KONTEN STATIS HOME SCREEN (HOME CONTENT) ===
-// Dibuat Statis untuk kerapihan dan menerima data dinamis
-// =========================================================
+import '../providers/activity_provider.dart';
+import '../widgets/activity_card.dart';
+import '../widgets/add_edit_activity_dialog.dart';
+import '../widgets/dynamic_stats_chart.dart';
 
-class HomeContent extends StatelessWidget {
-  // Menerima daftar aktivitas
-  final List<Activity> activities; 
-  const HomeContent({super.key, required this.activities});
-
-  PreferredSizeWidget _buildAppBar() {
-    return AppBar(
-      backgroundColor: Colors.white,
-      elevation: 0,
-      title: const Text('Activity Tracker', style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold, fontSize: 24)),
-      leading: const Padding(
-        padding: EdgeInsets.only(left: 16.0),
-        child: CircleAvatar(
-          backgroundColor: Color(0xFF42A5F5),
-          child: Text('R', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        ),
-      ),
-    );
-  }
-
-  // --- Widget Pembantu untuk Aktivitas Terbaru (Menggunakan data dinamis) ---
-  Widget _buildRecentActivities() {
-    // Ambil 2 aktivitas terbaru saja
-    final recent = activities.take(2).toList(); 
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text('Recent Activities', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-        const SizedBox(height: 10),
-        
-        // Cek jika ada aktivitas
-        if (recent.isEmpty)
-          const Center(child: Text("No activity has been recorded yet.")),
-        
-        // Buat ListTile untuk setiap aktivitas
-        ...recent.map((activity) {
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 4.0),
-            child: Column(
-              children: [
-                ListTile(
-                  leading: CircleAvatar(
-                    backgroundColor: activity.color.withAlpha(3),
-                    child: Icon(activity.icon, color: activity.color, size: 20),
-                  ),
-                  title: Text('${activity.title} - ${activity.duration.toStringAsFixed(1)} hours', style: const TextStyle(fontWeight: FontWeight.bold)),
-                  subtitle: Text(activity.date.toString().split(' ')[0]), // Tampilkan tanggal saja
-                  contentPadding: EdgeInsets.zero,
-                ),
-                const Divider(height: 1),
-              ],
-            ),
-          );
-        }),
-      ],
-    );
-  }
-  
-  // Fungsi untuk menghitung total jam yang dicatat minggu ini (SIMULASI DATA DINAMIS)
-  String _getTotalHours() {
-    // Ini hanyalah simulasi perhitungan sederhana
-    final total = activities.fold(0.0, (sum, item) => sum + item.duration);
-    return total.toStringAsFixed(1);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: _buildAppBar(),
-      body: Stack(
-        children: [
-          SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 10.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                const Text('Welcome, Reno!', style: TextStyle(fontSize: 20, color: Colors.black, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 20),
-
-                // 1. Summary/Stats Section (Mengirim data dinamis)
-                SummarySection(totalHours: _getTotalHours()), 
-                const SizedBox(height: 30),
-
-                const QuickLogSection(),
-                const SizedBox(height: 30),
-
-                const ActivityBreakdown(),
-                const SizedBox(height: 30),
-
-                _buildRecentActivities(),
-                const SizedBox(height: 100),
-              ],
-            ),
-          ),
-          // Floating Action Button (Dihapus dari sini, dipindahkan ke Controller)
-        ],
-      ),
-    );
-  }
-}
-
-// =========================================================
-// === BAGIAN 2: CONTROLLER NAVIGASI (HOME SCREEN UTAMA) ===
-// =========================================================
-
-class HomeScreen extends StatefulWidget {
+class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
-  State<HomeScreen> createState() => _HomeScreenState();
-}
-
-class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 0;
-
-  // DATA DINAMIS DISIMPAN DI SINI
-  List<Activity> activities = [];
-  List<Goal> goals = [];
-
-  // FUNGSI UNTUK MENAMBAH DATA BARU (CALLBACK)
-  void _addActivity(Activity activity) {
-    setState(() {
-      activities.add(activity);
-      activities.sort((a, b) => b.date.compareTo(a.date));
-    });
-  }
-
-  void _onItemTapped(int index) {
-    setState(() {
-      _selectedIndex = index;
-    });
-  }
-
-  // FUNGSI BARU: MENAMBAH GOAL (CALLBACK)
-  void _addGoal(Goal goal) {
-    setState(() {
-      goals.add(goal);
-    });
-  }
-
-  // FUNGSI NAVIGASI BARU: PINDAH KE ADD GOAL SCREEN
-  void navigateToAddGoal(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        // Meneruskan fungsi _addGoal ke AddGoalScreen
-        builder: (context) => AddGoalScreen(onAddGoal: _addGoal), 
-      ),
-    );
-  }
-
-  User _currentUser = User(
-    name: 'Reno Mulyadi',
-    email: 'reno.mulyadi@student.edu',
-    avatarLetter: 'R',
-    avatarColor: const Color(0xFF42A5F5), // Biru Muda
-  );
-
-  // Fungsi untuk update data user (Callback)
-  void updateUser(User updatedUser) {
-    setState(() {
-      _currentUser = updatedUser;
-    });
-  }
-
-  @override
   Widget build(BuildContext context) {
-    final List<Widget> widgetOptions = <Widget>[
-      HomeContent(activities: activities),      
-      ActivitiesScreen(activities: activities), 
-      GoalsScreen(activities: activities, goals: goals, onNavigateToAddGoal: () => navigateToAddGoal(context),),
-      ProfileScreen(currentUser: _currentUser, onUpdateUser: updateUser, activities: activities,),
-    ];
-    
+    final activityProvider = Provider.of<ActivityProvider>(context);
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Stack(
-        children: [
-          // Widget yang dipilih mengisi seluruh layar
-          widgetOptions.elementAt(_selectedIndex), 
+      backgroundColor: const Color(0xFFF7F7F7),
+      appBar: AppBar(
+        title: const Text('DAILY ACTIVITY FLOW'),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.add_task),
+            onPressed: () => showDialog(
+              context: context,
+              builder: (context) => const AddEditActivityDialog(),
+            ),
+          ),
         ],
       ),
-      
-      floatingActionButton: _selectedIndex == 1 // HANYA tampilkan jika tab Activities aktif
-        ? FloatingActionButton(
-            onPressed: () {
-              // Aksi yang sama dengan FAB lama
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => AddActivityScreen(onAddActivity: _addActivity),
-                ),
-              );
-            },
-            backgroundColor: Colors.blue,
-            shape: const CircleBorder(), // Menggunakan CircleBorder untuk bentuk bulat
-            child: const Icon(Icons.add, color: Colors.white, size: 30),
-          )
-        : null,
+      body: StreamBuilder<List<Activity>>(
+        stream: activityProvider.activitiesStream,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(child: Text('Error: ${snapshot.error}'));
+          }
+          if (!snapshot.hasData || snapshot.data!.isEmpty) {
+            return const Center(child: Text('Tidak ada aktivitas hari ini.'));
+          }
 
-      bottomNavigationBar: BottomNavigationBar(
-        backgroundColor: Colors.white,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        showSelectedLabels: true,
-        showUnselectedLabels: true,
-        items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.list_alt), label: 'Activities'),
-          BottomNavigationBarItem(icon: Icon(Icons.flag), label: 'Goals'),
-          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-        ],
-        currentIndex: _selectedIndex,
-        onTap: _onItemTapped,
+          final activities = snapshot.data!;
+          
+          return SingleChildScrollView(
+            child: Padding(
+              padding: const EdgeInsets.all(16.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- Bagian 1: Daily Activity Flow (Contoh Sederhana) ---
+                  _buildDailyActivityFlow(activities, activityProvider),
+                  const Divider(height: 40),
+
+                  // --- Bagian 2: Current Tasks (List View) ---
+                  const Text('CURRENT TASKS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 10),
+                  ...activities.map((activity) => ActivityCard(activity: activity)),
+                  
+                  // --- Bagian 3 & 4 (Hanya Placeholder): Dynamic Stats & Notes ---
+                  const SizedBox(height: 30),
+              const Text('DYNAMIC STATS (Hours Spent)', 
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              // Panggil Chart
+              DynamicStatsChart(
+                  stats: activityProvider.calculateDailyStats(activities)),
+                  Container(height: 100, color: Colors.grey.shade200, margin: const EdgeInsets.only(top: 8)),
+                ],
+              ),
+            ),
+          );
+        },
       ),
     );
   }
-}
+  
+  // Widget untuk simulasi Daily Activity Flow (Horizontal Timeline)
+  Widget _buildDailyActivityFlow(List<Activity> activities, ActivityProvider activityProvider) {
+  return Container(
+    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
+    decoration: BoxDecoration(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(15),
+      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+    ),
+    child: SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: activities.map((activity) {
+          // Menghitung durasi dalam jam untuk lebar visual (opsional)
+          final durationMinutes = activity.endTime.difference(activity.startTime).inMinutes;
+          final width = (durationMinutes / 60) * 80 + 50; // Lebar minimum 50px + skala
+
+          return Padding(
+            padding: const EdgeInsets.only(right: 10),
+            child: Container(
+              width: width.clamp(120.0, 250.0), // Batasi lebar
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration( 
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    activity.title,
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      decoration: activity.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '${activity.startTime.hour}:${activity.startTime.minute.toString().padLeft(2, '0')}',
+                    style: TextStyle(color: Colors.white.withAlpha(2), fontSize: 12),
+                  ),
+                ],
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    ),
+  );
+}}
