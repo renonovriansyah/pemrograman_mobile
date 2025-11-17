@@ -1,131 +1,321 @@
-// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:intl/intl.dart';
+import 'package:percent_indicator/percent_indicator.dart'; // Tambah
+import 'package:font_awesome_flutter/font_awesome_flutter.dart'; // Tambah
+
 import '../models/activity.dart';
+import '../models/habit.dart';
 import '../providers/activity_provider.dart';
+import '../providers/habit_provider.dart';
 import '../widgets/activity_card.dart';
 import '../widgets/add_edit_activity_dialog.dart';
-import '../widgets/dynamic_stats_chart.dart';
+import '../widgets/habit_card.dart';
+import '../widgets/add_edit_habit_dialog.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
+    // Providers
     final activityProvider = Provider.of<ActivityProvider>(context);
+    final habitProvider = Provider.of<HabitProvider>(context);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      appBar: AppBar(
-        title: const Text('DAILY ACTIVITY FLOW'),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.add_task),
-            onPressed: () => showDialog(
-              context: context,
-              builder: (context) => const AddEditActivityDialog(),
-            ),
-          ),
-        ],
-      ),
-      body: StreamBuilder<List<Activity>>(
-        stream: activityProvider.activitiesStream,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return Center(child: Text('Error: ${snapshot.error}'));
-          }
-          if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            return const Center(child: Text('Tidak ada aktivitas hari ini.'));
-          }
+    // Kueri utama
+    return StreamBuilder<List<Activity>>(
+      stream: activityProvider.activitiesStream,
+      builder: (context, activitySnapshot) {
+        if (activitySnapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        final activities = activitySnapshot.data ?? [];
 
-          final activities = snapshot.data!;
-          
-          return SingleChildScrollView(
-            child: Padding(
+        return StreamBuilder<List<Habit>>(
+          stream: habitProvider.habitsStream,
+          builder: (context, habitSnapshot) {
+            final habits = habitSnapshot.data ?? [];
+
+            // Tata letak utama menggunakan Row untuk layout 3 kolom (asumsi layar lebar)
+            return SingleChildScrollView(
               padding: const EdgeInsets.all(16.0),
-              child: Column(
+              child: Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // --- Bagian 1: Daily Activity Flow (Contoh Sederhana) ---
-                  _buildDailyActivityFlow(activities, activityProvider),
-                  const Divider(height: 40),
+                  // 1. Kolom Kiri: Stats & Input Cepat
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildHeader(context, activities),
+                        const SizedBox(height: 16),
+                        _buildQuickInputCard(context),
+                        const SizedBox(height: 16),
+                        _buildStaticStats(),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
 
-                  // --- Bagian 2: Current Tasks (List View) ---
-                  const Text('CURRENT TASKS', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 10),
-                  ...activities.map((activity) => ActivityCard(activity: activity)),
-                  
-                  // --- Bagian 3 & 4 (Hanya Placeholder): Dynamic Stats & Notes ---
-                  const SizedBox(height: 30),
-              const Text('DYNAMIC STATS (Hours Spent)', 
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 10),
-              // Panggil Chart
-              DynamicStatsChart(
-                  stats: activityProvider.calculateDailyStats(activities)),
-                  Container(height: 100, color: Colors.grey.shade200, margin: const EdgeInsets.only(top: 8)),
+                  // 2. Kolom Tengah: Time Blocking (Timeline Aktivitas)
+                  Expanded(
+                    flex: 3,
+                    child: _buildTimeBlocking(activities, activityProvider),
+                  ),
+                  const SizedBox(width: 16),
+
+                  // 3. Kolom Kanan: Tasks & Habits
+                  Expanded(
+                    flex: 2,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _buildUrgentTasks(context, activities),
+                        const SizedBox(height: 16),
+                        _buildHabitTracker(context, habits),
+                      ],
+                    ),
+                  ),
                 ],
               ),
+            );
+          },
+        );
+      },
+    );
+  }
+
+  // --- WIDGET PEMBANGUNAN ---
+
+  // Header dan Progress Circle
+  Widget _buildHeader(BuildContext context, List<Activity> activities) {
+    int totalTasks = activities.length;
+    int completedTasks = activities.where((a) => a.isCompleted).length;
+    double progress = totalTasks > 0 ? completedTasks / totalTasks : 0.0;
+    String date = DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now());
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('Hari ini: $date', style: const TextStyle(fontSize: 14, color: Colors.grey)),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                CircularPercentIndicator(
+                  radius: 40.0,
+                  lineWidth: 8.0,
+                  percent: progress,
+                  center: Text(
+                    "${(progress * 100).toInt()}%",
+                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18.0, color: Colors.teal),
+                  ),
+                  progressColor: Colors.teal,
+                  backgroundColor: Colors.teal.shade50,
+                ),
+                const SizedBox(width: 20),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      _buildStatItem('Total Jam Kerja:', '6.5 jam', FontAwesomeIcons.mugHot, Colors.orange),
+                      _buildStatItem('Jam Istirahat:', '30 menit', FontAwesomeIcons.mugSaucer, Colors.brown),
+                      _buildStatItem('Kebiasaan Terpenuhi:', '$completedTasks/$totalTasks', FontAwesomeIcons.check, Colors.green),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          );
-        },
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStatItem(String title, String value, IconData icon, Color color) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        children: [
+          FaIcon(icon, size: 14, color: color),
+          const SizedBox(width: 8),
+          Text(title, style: const TextStyle(fontSize: 12)),
+          const Spacer(),
+          Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
       ),
     );
   }
   
-  // Widget untuk simulasi Daily Activity Flow (Horizontal Timeline)
-  Widget _buildDailyActivityFlow(List<Activity> activities, ActivityProvider activityProvider) {
-  return Container(
-    padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 8),
-    decoration: BoxDecoration(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(15),
-      boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
-    ),
-    child: SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: activities.map((activity) {
-          // Menghitung durasi dalam jam untuk lebar visual (opsional)
-          final durationMinutes = activity.endTime.difference(activity.startTime).inMinutes;
-          final width = (durationMinutes / 60) * 80 + 50; // Lebar minimum 50px + skala
-
-          return Padding(
-            padding: const EdgeInsets.only(right: 10),
-            child: Container(
-              width: width.clamp(120.0, 250.0), // Batasi lebar
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration( 
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    activity.title,
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      decoration: activity.isCompleted ? TextDecoration.lineThrough : TextDecoration.none,
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '${activity.startTime.hour}:${activity.startTime.minute.toString().padLeft(2, '0')}',
-                    style: TextStyle(color: Colors.white.withAlpha(2), fontSize: 12),
-                  ),
-                ],
+  // Quick Input
+  Widget _buildQuickInputCard(BuildContext context) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Row(
+          children: [
+            const Expanded(
+              child: TextField(
+                decoration: InputDecoration(
+                  hintText: 'Input Cepat Aktivitas Baru...',
+                  border: InputBorder.none,
+                ),
               ),
             ),
-          );
-        }).toList(),
+            ElevatedButton(
+              onPressed: () => showDialog(
+                context: context,
+                builder: (context) => const AddEditActivityDialog(),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.teal,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Tambahkan'),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}}
+    );
+  }
+
+  // Placeholder untuk Static Stats
+  Widget _buildStaticStats() {
+    return const Card(
+      elevation: 2,
+      child: Padding(
+        padding: EdgeInsets.all(16.0),
+        child: Center(child: Text("Statistik Harian Lainnya...")),
+      ),
+    );
+  }
+
+  // Time Blocking (Menggantikan Activity Flow lama)
+  Widget _buildTimeBlocking(List<Activity> activities, ActivityProvider provider) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Time Blocking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            // Timeline horizontal untuk jam (Placeholder sederhana)
+            SizedBox(
+              height: 400,
+              child: ListView.builder(
+                itemCount: 24, // 24 jam
+                itemBuilder: (context, index) {
+                  final time = DateTime(DateTime.now().year, 
+                      DateTime.now().month, DateTime.now().day, index);
+                  
+                  // Filter aktivitas yang terjadi pada jam ini
+                  final hourlyActivities = activities.where((a) {
+                    return a.startTime.hour == index;
+                  }).toList();
+
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SizedBox(
+                        width: 50,
+                        child: Text(DateFormat('HH:mm').format(time), 
+                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
+                      ),
+                      const SizedBox(width: 8),
+                      // Tampilkan bubble aktivitas
+                      if (hourlyActivities.isNotEmpty)
+                        ...hourlyActivities.map((a) => Padding(
+                          padding: const EdgeInsets.only(right: 8.0, bottom: 4.0),
+                          child: Chip(
+                            label: Text(a.title, style: const TextStyle(color: Colors.white, fontSize: 12)),
+                            backgroundColor: provider.getColorForType(a.type).withAlpha(15),
+                          ),
+                        ))
+                      else
+                        Container(height: 1.0, color: Colors.grey.shade200, margin: const EdgeInsets.only(top: 8)),
+                    ],
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Tugas Mendesak & Penting
+  Widget _buildUrgentTasks(BuildContext context, List<Activity> activities) {
+    // Hanya tampilkan 5 tugas yang belum selesai
+    final pendingTasks = activities.where((a) => !a.isCompleted).take(5).toList();
+
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Tugas Mendesak & Penting', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            if (pendingTasks.isEmpty)
+              const Padding(
+                padding: EdgeInsets.all(8.0),
+                child: Text('Semua tugas selesai!'),
+              ),
+            ...pendingTasks.map((activity) => ActivityCard(activity: activity)),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // Pelacak Kebiasaan Baik
+  Widget _buildHabitTracker(BuildContext context, List<Habit> habits) {
+    return Card(
+      elevation: 2,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Lacak Kebiasaan Baikmu!', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 10),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2, // 2 kolom per baris
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 0.9, 
+              ),
+              itemCount: habits.length,
+              itemBuilder: (context, index) {
+                return HabitCard(habit: habits[index]);
+              },
+            ),
+            const SizedBox(height: 10),
+            Center(
+              child: TextButton.icon(
+                onPressed: () => showDialog(
+                    context: context, builder: (context) => const AddEditHabitDialog()),
+                icon: const FaIcon(FontAwesomeIcons.circlePlus, size: 18),
+                label: const Text('Tambah Kebiasaan Baru'),
+                style: TextButton.styleFrom(foregroundColor: Colors.teal),
+              ),
+            )
+          ],
+        ),
+      ),
+    );
+  }
+}
