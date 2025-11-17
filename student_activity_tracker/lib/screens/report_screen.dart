@@ -3,6 +3,7 @@ import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:provider/provider.dart';
 import '../providers/activity_provider.dart';
+import '../providers/habit_provider.dart'; // Wajib: Import Habit Provider
 import '../models/activity.dart'; 
 
 class ReportScreen extends StatelessWidget {
@@ -29,7 +30,7 @@ class ReportScreen extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 1,
-                  child: _buildProductivityChart(context), 
+                  child: _buildProductivityChart(context), // Bar Chart Dinamis
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -46,12 +47,13 @@ class ReportScreen extends StatelessWidget {
               children: [
                 Expanded(
                   flex: 1,
-                  child: _buildTimeDistributionChart(context), // REAL-TIME PIE CHART
+                  child: _buildTimeDistributionChart(context), // Pie Chart Dinamis
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   flex: 1,
-                  child: _buildHabitTrendChart(), // Placeholder
+                  // [FINAL IMPLEMENTASI LINE CHART]
+                  child: _buildHabitTrendChart(context), 
                 ),
               ],
             ),
@@ -106,11 +108,9 @@ class ReportScreen extends StatelessWidget {
         final activities = snapshot.data ?? [];
         final weeklyData = activityProvider.calculateWeeklyProductivity(activities);
 
-        // Cari jam maksimum untuk skala sumbu Y (FIXED: Batas minimum 1.0)
         final maxY = weeklyData.isEmpty 
             ? 5.0 
             : (weeklyData.map((e) => e.durationHours).reduce((a, b) => a > b ? a : b) * 1.2).clamp(1.0, double.infinity); 
-            // Batas minimal 1.0 mencegah interval = 0
 
         return _buildChartCard(
           title: 'Produktivitas Mingguan',
@@ -132,9 +132,13 @@ class ReportScreen extends StatelessWidget {
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
                     const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+                    final dayIndex = value.toInt();
+                    if (dayIndex < 0 || dayIndex >= days.length) { 
+                        return SideTitleWidget(axisSide: meta.axisSide, child: Text(''));
+                    }
                     return SideTitleWidget(
                       axisSide: meta.axisSide,
-                      child: Text(days[value.toInt()]),
+                      child: Text(days[dayIndex]),
                     );
                   })
                 ),
@@ -240,8 +244,11 @@ class ReportScreen extends StatelessWidget {
     );
   }
 
-  // 4. Tren Kebiasaan (Grafik Garis) - Placeholder
-  Widget _buildHabitTrendChart() {
+  // 4. Tren Kebiasaan (Grafik Garis) - FINAL IMPLEMENTASI
+  Widget _buildHabitTrendChart(BuildContext context) { 
+    final habitProvider = Provider.of<HabitProvider>(context);
+    final trendData = habitProvider.calculateTrend(); // Ambil data tren
+
     return _buildChartCard(
       title: 'Tren Kebiasaan',
       content: Column(
@@ -249,17 +256,34 @@ class ReportScreen extends StatelessWidget {
           Expanded(
             child: LineChart(
               LineChartData(
-                minY: 10, 
-                maxY: 30,
+                minY: 0, 
+                maxY: 1.0, 
                 lineBarsData: [
                   LineChartBarData(
-                    spots: List.generate(10, (i) => FlSpot(i.toDouble(), i % 2 == 0 ? 15 : 20 + i.toDouble())),
+                    // Mapping data tren (dayOffset, completionRate)
+                    spots: trendData.map((data) => FlSpot(data.dayOffset.toDouble(), data.completionRate)).toList(),
                     isCurved: true,
                     dotData: const FlDotData(show: true),
                     color: Colors.teal,
                   )
                 ],
-                titlesData: const FlTitlesData(show: false),
+                titlesData: FlTitlesData(
+                  show: true, 
+                  bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
+                    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+                    return SideTitleWidget(
+                      axisSide: meta.axisSide, // <-- Posisinya tidak diubah
+                      child: Text(days[value.toInt()]), // <-- CHILD HARUS DI AKHIR
+                      );
+                    })
+                  ),
+                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, getTitlesWidget: (value, meta) {
+                    return Text('${(value * 100).toInt()}%'); 
+                  })),
+                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                ),
                 gridData: const FlGridData(show: true, drawVerticalLine: false),
                 borderData: FlBorderData(show: false),
               ),

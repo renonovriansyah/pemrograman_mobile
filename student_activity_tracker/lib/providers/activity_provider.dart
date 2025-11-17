@@ -27,18 +27,12 @@ class ActivityProvider with ChangeNotifier {
   final String _userId = 'user_abc'; 
   String get currentUserId => _userId;
 
-  // --- STREAM DATA FIREBASE (FIXED: Mengambil data HARI INI) ---
   Stream<List<Activity>> get activitiesStream {
-    final today = DateTime.now();
-    final startOfToday = DateTime(today.year, today.month, today.day);
-    final endOfToday = startOfToday.add(const Duration(days: 1));
     
     // Kueri dengan filter rentang waktu HARI INI
     return _db
         .collection('activities')
         .where('userId', isEqualTo: _userId)
-        .where('startTime', isGreaterThanOrEqualTo: startOfToday)
-        .where('startTime', isLessThan: endOfToday)
         .orderBy('startTime', descending: false)
         .withConverter<Activity>(
           fromFirestore: Activity.fromFirestore,
