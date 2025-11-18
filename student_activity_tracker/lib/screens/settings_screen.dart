@@ -1,237 +1,204 @@
+// lib/screens/settings_screen.dart (Final dengan Firebase Profile)
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
+import '../providers/user_provider.dart'; // Wajib
+import 'package:shared_preferences/shared_preferences.dart'; // Tetap untuk settings lokal
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  // Hanya simpan state untuk switch yang tidak terkait profil
+  bool _isDarkMode = false;
+  
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final _formKey = GlobalKey<FormState>(); // Untuk validasi form
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLocalSettings();
+  }
+  
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _emailController.dispose();
+    super.dispose();
+  }
+
+  // --- LOCAL SETTINGS LOGIC (DarkMode) ---
+  void _loadLocalSettings() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _isDarkMode = prefs.getBool('isDarkMode') ?? false;
+    });
+  }
+
+  void _saveSetting(String key, bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    prefs.setBool(key, value);
+  }
+
+  // --- SIMPAN PROFIL KE FIRESTORE ---
+  void _saveProfile(UserProvider userProvider) async {
+    if (_formKey.currentState!.validate()) {
+      await userProvider.updateProfile(_nameController.text, _emailController.text);
+      
+      // Safety check for async gap
+      if (!mounted) return; 
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Profil berhasil disimpan di Firestore!')),
+      );
+    }
+  }
+
+  // --- BUILD METHOD ---
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFFF7F7F7),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(32.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Pengaturan Akun & Aplikasi',
-              style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 20),
+    // Ambil profile dari provider
+    return Consumer<UserProvider>(
+      builder: (context, userProvider, child) {
+        final profile = userProvider.profile;
 
-            // Konten utama dibagi menjadi dua kolom
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Kolom Kiri (Profil, Preferensi, Integrasi Eksternal)
-                Expanded(
-                  flex: 1,
-                  child: Column(
+        // Sinkronkan text controller dengan data Firestore saat pertama dimuat
+        if (profile != null && _nameController.text.isEmpty && _emailController.text.isEmpty) {
+             _nameController.text = profile.name;
+             _emailController.text = profile.email;
+        }
+
+        return Scaffold(
+          backgroundColor: const Color(0xFFF7F7F7),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.all(32.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Profil & Pengaturan Aplikasi',
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 30),
+                  
+                  // Layout 2 Kolom Sederhana
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      _buildProfileSection(context),
-                      const SizedBox(height: 20),
-                      _buildAppPreferencesSection(),
-                      const SizedBox(height: 20),
-                      _buildExternalIntegrationSection(),
-                      const SizedBox(height: 20),
-                      _buildDeleteAccountSection(),
+                      // Kolom Kiri: Profil
+                      Expanded(
+                        flex: 1,
+                        child: _buildProfileSection(userProvider),
+                      ),
+                      const SizedBox(width: 32),
+                      // Kolom Kanan: Toggles & Aksi
+                      Expanded(
+                        flex: 1,
+                        child: Column(
+                          children: [
+                            _buildAppPreferencesSection(),
+                            const SizedBox(height: 20),
+                            _buildSaveButton(userProvider),
+                          ],
+                        ),
+                      ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 32),
-
-                // Kolom Kanan (Nama & Aplikasi, Integrasi Khusus)
-                Expanded(
-                  flex: 1,
-                  child: Column(
-                    children: [
-                      _buildTaskSettingsSection(),
-                      const SizedBox(height: 20),
-                      _buildSpecialIntegrationSection(),
-                      const SizedBox(height: 20),
-                      _buildSaveButton(),
-                    ],
-                  ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 
-  // --- WIDGET BAGIAN KIRI ---
+  // --- WIDGET BAGIAN KIRI: PROFIL FIRESTORE ---
 
-  Widget _buildProfileSection(BuildContext context) {
+  Widget _buildProfileSection(UserProvider userProvider) {
+    final profile = userProvider.profile;
+    
     return _buildSettingCard(
-      title: 'Profil Maya',
+      title: 'Profil Pengguna',
       children: [
-        const Text('Profil Maya', style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 10),
-        Row(
-          children: [
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  labelText: 'John Doe',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            const Expanded(
-              child: TextField(
-                decoration: InputDecoration(
-                  labelText: 'john.doe@email.com',
-                  border: OutlineInputBorder(),
-                  contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-                ),
-              ),
-            ),
-            const SizedBox(width: 10),
-            ElevatedButton(
-              onPressed: () {},
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Ubah Data'),
-            ),
-          ],
-        ),
+        if (profile == null) 
+          const Center(child: CircularProgressIndicator())
+        else ...[
+          const Text('Nama Lengkap', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _nameController,
+            decoration: const InputDecoration(labelText: 'Nama', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
+            validator: (value) => value == null || value.isEmpty ? 'Nama wajib diisi.' : null,
+          ),
+          const SizedBox(height: 16),
+          const Text('Alamat Email', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16)),
+          const SizedBox(height: 8),
+          TextFormField(
+            controller: _emailController,
+            keyboardType: TextInputType.emailAddress,
+            decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder(), contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10)),
+            validator: (value) => value == null || !value.contains('@') ? 'Masukkan email yang valid.' : null,
+          ),
+        ]
       ],
     );
   }
+  
+  // --- WIDGET BAGIAN KANAN: PREFERENSI & TOGGLES ---
 
   Widget _buildAppPreferencesSection() {
     return _buildSettingCard(
-      title: 'Preferensi Aplikasi',
+      title: 'Pengaturan Dasar',
       children: [
-        const Text('Ubah Kata Sandi', style: TextStyle(fontWeight: FontWeight.w600)),
-        const SizedBox(height: 10),
-        DropdownButtonFormField<String>(
-          decoration: const InputDecoration(
-            labelText: 'Ubah Kata Sandal',
-            border: OutlineInputBorder(),
-            contentPadding: EdgeInsets.symmetric(horizontal: 10, vertical: 10),
-          ),
-          initialValue: '(GMT +7) Jakarta',
-          items: const [
-            DropdownMenuItem(value: '(GMT +7) Jakarta', child: Text('(GMT +7) Jakarta')),
-          ],
-          onChanged: (String? newValue) {},
-        ),
-      ],
-    );
-  }
-
-  Widget _buildExternalIntegrationSection() {
-    return _buildSettingCard(
-      title: 'Integrasi Eksternal',
-      children: [
-        _buildIntegrationToggle(
+        _buildAppToggle(
           title: 'Mode Gelap',
-          subtitle: 'Tema Gelap',
+          subtitle: 'Ubah tema aplikasi',
           icon: FontAwesomeIcons.moon,
-          color: Colors.black87,
-        ),
-        _buildIntegrationToggle(
-          title: 'Zona Warna',
-          subtitle: 'Pilih Zona Warna',
-          icon: FontAwesomeIcons.palette,
-          color: Colors.purple,
-        ),
-        // Placeholder untuk pilihan warna
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _buildColorCircle(Colors.blue),
-            _buildColorCircle(Colors.yellow),
-            _buildColorCircle(Colors.orange),
-            _buildColorCircle(Colors.purple),
-            _buildColorCircle(Colors.grey),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _buildDeleteAccountSection() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      child: TextButton(
-        onPressed: () {},
-        style: TextButton.styleFrom(
-          foregroundColor: Colors.red,
-        ),
-        child: const Text('Hapus Akun', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-    );
-  }
-
-  // --- WIDGET BAGIAN KANAN ---
-
-  Widget _buildTaskSettingsSection() {
-    return _buildSettingCard(
-      title: 'Nama Modul & Aplikasi',
-      children: [
-        _buildAppToggle(
-          title: 'Nama Riil Proyek',
-          subtitle: 'Modul Riil',
-          icon: FontAwesomeIcons.lightbulb,
-        ),
-        _buildAppToggle(
-          title: 'Mulai Timer',
-          subtitle: 'Timer Waktu',
-          icon: FontAwesomeIcons.clock,
+          color: Colors.black,
+          initialValue: _isDarkMode,
+          onChanged: (value) {
+            setState(() { _isDarkMode = value; });
+            _saveSetting('isDarkMode', value);
+          },
         ),
         const Divider(),
         _buildAppToggle(
-          title: 'Email',
-          subtitle: 'Notifikasi Email',
+          title: 'Notifikasi Email',
+          subtitle: 'Kirim pengingat harian dan laporan',
           icon: FontAwesomeIcons.envelope,
-          initialValue: true,
+          color: Colors.redAccent,
+          initialValue: true, // Statis, bisa disambungkan ke Provider jika ada
+          onChanged: (v) {},
         ),
         _buildAppToggle(
-          title: 'Baca Buku 30 Menit',
-          subtitle: 'Target Kebiasaan',
-          icon: FontAwesomeIcons.book,
-          initialValue: true,
-        ),
-      ],
-    );
-  }
-
-  Widget _buildSpecialIntegrationSection() {
-    return _buildSettingCard(
-      title: 'Integrasi Eksternal',
-      children: [
-        _buildIntegrationToggle(
-          title: 'Oothendár',
-          subtitle: 'Integrasi Kalender',
+          title: 'Integrasi Kalender',
+          subtitle: 'Sinkronisasi dengan Oothendár',
           icon: FontAwesomeIcons.calendar,
           color: Colors.blue,
-          initialValue: true,
-        ),
-        _buildIntegrationToggle(
-          title: 'Notion',
-          subtitle: 'Integrasi Catatan',
-          icon: FontAwesomeIcons.n,
-          color: Colors.black,
+          initialValue: true, 
+          onChanged: (v) {},
         ),
       ],
     );
   }
 
-  Widget _buildSaveButton() {
+  Widget _buildSaveButton(UserProvider userProvider) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 20.0),
       child: Align(
         alignment: Alignment.centerRight,
         child: ElevatedButton(
-          onPressed: () {},
+          onPressed: () => _saveProfile(userProvider), // Panggil fungsi simpan
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.teal,
             foregroundColor: Colors.white,
@@ -245,7 +212,7 @@ class SettingsScreen extends StatelessWidget {
   }
 
 
-  // --- WIDGET PEMBANTU ---
+  // --- WIDGET PEMBANTU (Helper Widgets) ---
 
   Widget _buildSettingCard({required String title, required List<Widget> children}) {
     return Card(
@@ -267,84 +234,24 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
-
-  Widget _buildIntegrationToggle({
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    bool initialValue = false,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          FaIcon(icon, size: 20, color: color),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-              ],
-            ),
-          ),
-          Switch(
-            value: initialValue,
-            onChanged: (bool value) {},
-            activeThumbColor: Colors.teal,
-          ),
-        ],
-      ),
-    );
-  }
   
   Widget _buildAppToggle({
     required String title,
     required String subtitle,
     required IconData icon,
-    bool initialValue = false,
+    required Color color,
+    required bool initialValue,
+    required ValueChanged<bool> onChanged,
   }) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          Expanded(
-            child: Row(
-              children: [
-                FaIcon(icon, size: 20, color: Colors.teal),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
-                    Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          Switch(
-            value: initialValue,
-            onChanged: (bool value) {},
-            activeThumbColor: Colors.teal,
-          ),
-        ],
-      ),
-    );
-  }
-  
-  Widget _buildColorCircle(Color color) {
-    return Container(
-      width: 28,
-      height: 28,
-      margin: const EdgeInsets.only(top: 10, right: 8),
-      decoration: BoxDecoration(
-        color: color,
-        shape: BoxShape.circle,
-        border: Border.all(color: Colors.black12, width: 2),
-      ),
+    // Menggunakan SwitchListTile untuk UX yang lebih baik
+    return SwitchListTile(
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+      subtitle: Text(subtitle, style: TextStyle(fontSize: 12, color: Colors.grey.shade600)),
+      value: initialValue,
+      onChanged: onChanged,
+      secondary: FaIcon(icon, size: 20, color: color),
+      activeThumbColor: Colors.teal,
+      contentPadding: EdgeInsets.zero,
     );
   }
 }

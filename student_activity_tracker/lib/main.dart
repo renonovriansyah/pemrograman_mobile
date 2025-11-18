@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'firebase_options.dart'; 
 import 'providers/activity_provider.dart';
 import 'providers/habit_provider.dart';
+import 'providers/user_provider.dart';
 import 'screens/main_navigator.dart';
 import 'package:intl/date_symbol_data_local.dart';
 
@@ -18,6 +19,7 @@ void main() async {
       providers: [
         ChangeNotifierProvider(create: (context) => ActivityProvider()), 
         ChangeNotifierProvider(create: (context) => HabitProvider()), 
+        ChangeNotifierProvider(create: (context) => UserProvider()),
       ],
       child: const MyApp(),
     ),
