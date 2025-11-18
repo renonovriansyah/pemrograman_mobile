@@ -204,50 +204,68 @@ class HomeScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16.0),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Time Blocking', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-            const SizedBox(height: 10),
-            // Timeline horizontal untuk jam (Placeholder sederhana)
-            SizedBox(
-              height: 400,
-              child: ListView.builder(
-                itemCount: 24, // 24 jam
-                itemBuilder: (context, index) {
-                  final time = DateTime(DateTime.now().year, 
-                      DateTime.now().month, DateTime.now().day, index);
-                  
-                  // Filter aktivitas yang terjadi pada jam ini
-                  final hourlyActivities = activities.where((a) {
-                    return a.startTime.hour == index;
-                  }).toList();
+            children: [
+              const Text('Time Blocking', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              const SizedBox(height: 10),
+              
+              SizedBox(
+                height: 450, // Sedikit lebih tinggi untuk tampilan yang lebih baik
+                child: ListView.builder(
+                  itemCount: 24, // 24 jam
+                  itemBuilder: (context, index) {
+                    final time = DateTime(DateTime.now().year, 
+                        DateTime.now().month, DateTime.now().day, index);
+                    
+                    // Filter aktivitas yang terjadi pada jam ini
+                    final hourlyActivities = activities.where((a) {
+                      return a.startTime.hour == index;
+                    }).toList();
 
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SizedBox(
-                        width: 50,
-                        child: Text(DateFormat('HH:mm').format(time), 
-                          style: TextStyle(fontSize: 10, color: Colors.grey.shade600)),
-                      ),
-                      const SizedBox(width: 8),
-                      // Tampilkan bubble aktivitas
-                      if (hourlyActivities.isNotEmpty)
-                        ...hourlyActivities.map((a) => Padding(
-                          padding: const EdgeInsets.only(right: 8.0, bottom: 4.0),
-                          child: Chip(
-                            label: Text(a.title, style: const TextStyle(color: Colors.white, fontSize: 12)),
-                            backgroundColor: provider.getColorForType(a.type).withAlpha(15),
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 4.0),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Kolom Jam
+                          SizedBox(
+                            width: 50,
+                            child: Text(
+                               DateFormat('HH:mm').format(time), 
+                               style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontWeight: FontWeight.w500)),
                           ),
-                        ))
-                      else
-                        Container(height: 1.0, color: Colors.grey.shade200, margin: const EdgeInsets.only(top: 8)),
-                    ],
-                  );
-                },
+                          const SizedBox(width: 8),
+
+                          // Kolom Aktivitas (Menggunakan Wrap untuk multiline)
+                          Expanded(
+                            child: hourlyActivities.isNotEmpty
+                            ? Wrap( 
+                                spacing: 8.0,
+                                runSpacing: 4.0,
+                                children: hourlyActivities.map((a) => Chip(
+                                  label: Text(
+                                      a.title, 
+                                      style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600)
+                                    ),
+                                  // [FIX] Menggunakan warna dari Provider dengan opacity penuh
+                                  backgroundColor: provider.getColorForType(a.type), 
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                )).toList(),
+                              )
+                            : Container(
+                                // [FIX] Tampilkan garis abu-abu muda jika tidak ada aktivitas (untuk visual timeline)
+                                height: 1.0, 
+                                color: Colors.grey.shade300, 
+                                margin: const EdgeInsets.only(top: 8)
+                              ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
       ),
     );
   }

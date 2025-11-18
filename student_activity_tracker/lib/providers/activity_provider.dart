@@ -59,15 +59,19 @@ class ActivityProvider with ChangeNotifier {
 
   // 1. Mendapatkan Warna untuk Tipe Aktivitas
   Color getColorForType(ActivityType type) { 
-    switch (type) {
-      case ActivityType.call:
-        return Colors.green;
-      case ActivityType.deepWork:
-        return Colors.blue;
-      case ActivityType.workout:
-        return Colors.orange;
-      case ActivityType.routine:
-        return Colors.purple;
+  switch (type) {
+    case ActivityType.call:
+      // Warna Hijau lebih kalem
+      return const Color.fromARGB(255, 136, 203, 139); 
+    case ActivityType.deepWork:
+      // Warna Biru yang lebih dalam/matang
+      return const Color.fromARGB(255, 125, 157, 190); 
+    case ActivityType.workout:
+      // Warna Oranye kecoklatan
+      return const Color.fromARGB(255, 245, 193, 142); 
+    case ActivityType.routine:
+      // Warna Ungu yang lebih lembut
+      return const Color.fromARGB(255, 190, 144, 198); 
     }
   }
 
