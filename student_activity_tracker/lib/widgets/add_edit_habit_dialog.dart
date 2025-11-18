@@ -46,7 +46,7 @@ class _AddEditHabitDialogState extends State<AddEditHabitDialog> {
         widget.habit!.title = title;
         widget.habit!.targetAmount = target;
         widget.habit!.unit = unit;
-        provider.updateHabitProgress(widget.habit!.id, widget.habit!.currentAmount);
+        provider.incrementHabitProgress(widget.habit!.id, widget.habit!.currentAmount);
         
       } else {
         final newHabit = Habit(
@@ -73,21 +73,21 @@ class _AddEditHabitDialogState extends State<AddEditHabitDialog> {
             children: <Widget>[
               TextFormField(
                 controller: _titleController,
-                decoration: const InputDecoration(labelText: 'Nama Kebiasaan'),
-                validator: (value) => value == null || value.isEmpty ? 'Wajib diisi' : null,
+                decoration: const InputDecoration(labelText: 'Aktivitas Kebiasaan'),
+                validator: (value) => value == null || value.isEmpty ? 'Belum diisi' : null,
               ),
               TextFormField(
                 controller: _targetController,
                 keyboardType: TextInputType.number,
-                decoration: const InputDecoration(labelText: 'Target Harian'),
+                decoration: const InputDecoration(labelText: 'Target Per Hari'),
                 validator: (value) => value == null || int.tryParse(value) == null || int.tryParse(value)! <= 0
-                    ? 'Masukkan angka target yang valid (> 0)'
+                    ? 'Masukkan Angka Target/Hari (> 0)'
                     : null,
               ),
               TextFormField(
                 controller: _unitController,
                 decoration: const InputDecoration(labelText: 'Satuan'),
-                validator: (value) => value == null || value.isEmpty ? 'Wajib diisi' : null,
+                validator: (value) => value == null || value.isEmpty ? 'Belum Diisi, Contoh: Kali' : null,
               ),
             ],
           ),

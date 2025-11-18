@@ -13,7 +13,16 @@ class TrendChartData {
 class HabitProvider with ChangeNotifier {
   final FirebaseFirestore _db = FirebaseFirestore.instance;
 
-  // READ (Stream untuk Kebiasaan) - BERDASARKAN KODE ANDA YANG STABIL
+  // --- HELPER INTERNAL: Ambil data habit saat ini ---
+  // Diperlukan untuk melakukan pengecekan reset dan target sebelum update
+  Future<Habit?> _getHabit(String habitId) async {
+    final doc = await _db.collection('habits').doc(habitId).get();
+    if (!doc.exists) return null;
+    return Habit.fromFirestore(doc, null);
+  }
+
+
+  // --- READ (Stream untuk Kebiasaan) - KODE ANDA YANG STABIL ---
   Stream<List<Habit>> get habitsStream {
     return _db
         .collection('habits')
@@ -28,17 +37,43 @@ class HabitProvider with ChangeNotifier {
 
   // CREATE
   Future<void> addHabit(Habit habit) async {
+    // [PENTING] Simpan lastUpdated saat membuat habit baru
+    habit.lastUpdated = Timestamp.fromDate(DateTime.now()); 
     await _db.collection('habits').doc(habit.id).set(habit.toFirestore());
   }
 
-  // UPDATE (Update Progres)
-  Future<void> updateHabitProgress(String habitId, int amount) async {
+  // --- UPDATE (FUNGSI BARU: INCREMENT & RESET HARIAN) ---
+  // Ganti panggilan lama updateHabitProgress dengan fungsi ini di HabitCard Anda!
+  Future<void> incrementHabitProgress(String habitId, int incrementAmount) async {
+    final currentHabit = await _getHabit(habitId);
+    if (currentHabit == null) return;
+
+    // 1. Cek Reset Harian
+    int amountToSet = currentHabit.currentAmount;
+    final now = DateTime.now();
+
+    // Cek jika update terakhir bukan hari ini (tanggal berbeda)
+    if (currentHabit.lastUpdated == null || currentHabit.lastUpdated!.toDate().day != now.day) {
+      // Reset jumlah harian menjadi 0 karena hari sudah berganti
+      amountToSet = 0;
+    }
+    
+    // 2. Hitung Jumlah Baru
+    int newAmount = amountToSet + incrementAmount;
+    
+    // 3. Batasi Target (Target Enforcement: tidak boleh melebihi targetAmount)
+    if (newAmount > currentHabit.targetAmount) {
+      newAmount = currentHabit.targetAmount;
+    }
+    
+    // 4. Update Firestore
     await _db.collection('habits').doc(habitId).update({
-      'currentAmount': amount,
+      'currentAmount': newAmount,
+      'lastUpdated': Timestamp.fromDate(now), // Simpan timestamp update terakhir
     });
   }
 
-  // UPDATE (Update Detail: Judul, Target, Unit) - DIBUTUHKAN UNTUK CRUD LENGKAP
+  // UPDATE (FUNGSI LAMA: UNTUK SETTING)
   Future<void> updateHabitDetails(Habit habit) async {
     await _db.collection('habits').doc(habit.id).update(
       {
@@ -48,7 +83,7 @@ class HabitProvider with ChangeNotifier {
       }
     );
   }
-
+  
   // DELETE
   Future<void> deleteHabit(String habitId) async {
     await _db.collection('habits').doc(habitId).delete();

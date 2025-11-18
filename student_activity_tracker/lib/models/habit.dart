@@ -9,12 +9,15 @@ class Habit {
   String unit; // Misalnya, "ml" atau "mins"
   final String userId = 'user_abc'; // ID user statis
 
+  Timestamp? lastUpdated;
+
   Habit({
     String? id,
     required this.title,
     required this.targetAmount,
     this.currentAmount = 0,
     required this.unit,
+    Timestamp? lastUpdated,
   }) : id = id ?? const Uuid().v4();
 
   // Konversi dari Firestore (PASTIKAN FIELD TIDAK NULL)
@@ -30,6 +33,7 @@ class Habit {
       targetAmount: (data?['targetAmount'] as int?) ?? 0, 
       currentAmount: (data?['currentAmount'] as int?) ?? 0,
       unit: data?['unit'] ?? '',
+      lastUpdated: data?['lastUpdated'] as Timestamp?,
     );
   }
 
@@ -42,6 +46,7 @@ class Habit {
       "unit": unit,
       "userId": userId,
       "createdAt": FieldValue.serverTimestamp(),
+      "lastUpdated": lastUpdated ?? FieldValue.serverTimestamp(),
     };
   }
 }

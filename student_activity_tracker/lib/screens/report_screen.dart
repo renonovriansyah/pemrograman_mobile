@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'package:fl_chart/fl_chart.dart'; 
 import 'package:provider/provider.dart';
 import '../providers/activity_provider.dart';
@@ -329,18 +328,6 @@ Widget _buildHabitTrendChart(BuildContext context) {
           ),
         ),
         const SizedBox(height: 10),
-        Align(
-          alignment: Alignment.centerRight,
-          child: ElevatedButton.icon(
-            onPressed: () {},
-            icon: const FaIcon(FontAwesomeIcons.filePdf, size: 16),
-            label: const Text("Ekspor Laporan (PDF/CSV)"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.teal,
-              foregroundColor: Colors.white,
-            ),
-          ),
-        ),
       ],
     ),
   );

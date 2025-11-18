@@ -96,7 +96,7 @@ class HabitCard extends StatelessWidget {
                 InkWell(
                   onTap: () {
                     int newAmount = habit.currentAmount + (habit.unit == 'ml' ? 100 : 1);
-                    provider.updateHabitProgress(habit.id, newAmount);
+                    provider.incrementHabitProgress(habit.id, newAmount);
                   },
                   child: const FaIcon(FontAwesomeIcons.circlePlus, color: Colors.green, size: 28),
                 ),
