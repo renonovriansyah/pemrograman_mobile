@@ -1,14 +1,13 @@
-// lib/models/habit.dart
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:uuid/uuid.dart';
 
 class Habit {
   final String id;
   String title;
-  int targetAmount; // Contoh: 8 gelas air, 10 menit meditasi
+  int targetAmount; // Misalnya, ml air atau menit meditasi
   int currentAmount;
-  String unit; // Contoh: 'ml', 'mins', 'times'
-  final String userId = 'user_abc'; // Ganti dengan ID user yang sebenarnya
+  String unit; // Misalnya, "ml" atau "mins"
+  final String userId = 'user_abc'; // ID user statis
 
   Habit({
     String? id,
@@ -18,6 +17,7 @@ class Habit {
     required this.unit,
   }) : id = id ?? const Uuid().v4();
 
+  // Konversi dari Firestore (PASTIKAN FIELD TIDAK NULL)
   factory Habit.fromFirestore(
       DocumentSnapshot<Map<String, dynamic>> snapshot,
       SnapshotOptions? options,
@@ -26,12 +26,14 @@ class Habit {
     return Habit(
       id: snapshot.id,
       title: data?['title'] ?? '',
-      targetAmount: data?['targetAmount'] ?? 0,
-      currentAmount: data?['currentAmount'] ?? 0,
+      // PASTIKAN SEMUA INTEGER MENGGUNAKAN || 0
+      targetAmount: (data?['targetAmount'] as int?) ?? 0, 
+      currentAmount: (data?['currentAmount'] as int?) ?? 0,
       unit: data?['unit'] ?? '',
     );
   }
 
+  // Konversi ke Firestore
   Map<String, dynamic> toFirestore() {
     return {
       "title": title,

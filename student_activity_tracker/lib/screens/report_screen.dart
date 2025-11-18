@@ -245,65 +245,104 @@ class ReportScreen extends StatelessWidget {
   }
 
   // 4. Tren Kebiasaan (Grafik Garis) - FINAL IMPLEMENTASI
-  Widget _buildHabitTrendChart(BuildContext context) { 
-    final habitProvider = Provider.of<HabitProvider>(context);
-    final trendData = habitProvider.calculateTrend(); // Ambil data tren
+Widget _buildHabitTrendChart(BuildContext context) { 
+  final habitProvider = Provider.of<HabitProvider>(context);
+  final fullTrendData = habitProvider.calculateTrend();
+  
+  final trendData = fullTrendData.where((data) => data.dayOffset > 0).toList(); 
 
-    return _buildChartCard(
-      title: 'Tren Kebiasaan',
-      content: Column(
-        children: [
-          Expanded(
-            child: LineChart(
-              LineChartData(
-                minY: 0, 
-                maxY: 1.0, 
-                lineBarsData: [
-                  LineChartBarData(
-                    // Mapping data tren (dayOffset, completionRate)
-                    spots: trendData.map((data) => FlSpot(data.dayOffset.toDouble(), data.completionRate)).toList(),
-                    isCurved: true,
-                    dotData: const FlDotData(show: true),
-                    color: Colors.teal,
-                  )
-                ],
-                titlesData: FlTitlesData(
-                  show: true, 
-                  bottomTitles: AxisTitles(
-                  sideTitles: SideTitles(showTitles: true, getTitlesWidget: (value, meta) {
-                    const days = ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'];
+  // Menentukan batas sumbu X berdasarkan jumlah titik data (0 hingga 9)
+  final double maxAxisX = trendData.length.toDouble() - 1; 
+
+  if (trendData.isEmpty) {
+     return _buildChartCard(
+        title: 'Tren Kebiasaan',
+        content: const Center(child: Text("Tidak ada data tren dalam 9 hari terakhir.")),
+     );
+  }
+
+  return _buildChartCard(
+    title: 'Tren Kebiasaan',
+    content: Column(
+      children: [
+        Expanded(
+          child: LineChart(
+            LineChartData(
+              // Pastikan batas sumbu X disetel dengan benar
+              minX: 0, 
+              maxX: maxAxisX, // Max index adalah 9 (10 titik)
+              minY: 0, 
+              maxY: 1.0, 
+              lineBarsData: [
+                LineChartBarData(
+                  spots: trendData.asMap().entries.map((entry) {
+                      final index = entry.key; // 0 sampai 8
+                      final data = entry.value; // dayOffset 1 sampai 9
+                      return FlSpot(index.toDouble(), data.completionRate);
+                  }).toList(),
+                  isCurved: true,
+                  dotData: const FlDotData(show: true),
+                  color: Colors.teal,
+                )
+              ],
+              titlesData: FlTitlesData(
+                show: true, 
+                // --- Sumbu X (Bottom Titles) ---
+                bottomTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true, 
+                    reservedSize: 25, 
+                    interval: 2, // [UPDATED] Tampilkan setiap titik (1 hari lalu)
+                    getTitlesWidget: (value, meta) {
+                    final maxAxisX = trendData.length.toDouble() - 1; // 8.0 (untuk 9 titik)
+                    final daysAgo = maxAxisX.toInt() - value.toInt() + 1;
+                    
+                    if (daysAgo < 1 || daysAgo > 9) { 
+                        // [FIX 1 & 2] Hapus const dan pindahkan child ke akhir
+                        return SideTitleWidget(axisSide: meta.axisSide, child: const Text('')); 
+                    }
+                    
                     return SideTitleWidget(
-                      axisSide: meta.axisSide, // <-- Posisinya tidak diubah
-                      child: Text(days[value.toInt()]), // <-- CHILD HARUS DI AKHIR
-                      );
-                    })
-                  ),
-                  leftTitles: AxisTitles(sideTitles: SideTitles(showTitles: true, reservedSize: 40, getTitlesWidget: (value, meta) {
-                    return Text('${(value * 100).toInt()}%'); 
-                  })),
-                  topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
-                  rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                        axisSide: meta.axisSide,
+                        child: Text('$daysAgo hari lalu'), // [FIX 2] Child di akhir
+                    );
+                    }
+                  )
                 ),
-                gridData: const FlGridData(show: true, drawVerticalLine: false),
-                borderData: FlBorderData(show: false),
+                // --- Sumbu Y (Left Titles) ---
+                leftTitles: AxisTitles(
+                  sideTitles: SideTitles(
+                    showTitles: true, 
+                    reservedSize: 40, 
+                    interval: 0.2, // Interval 20%
+                    getTitlesWidget: (value, meta) {
+                      return Text('${(value * 100).toInt()}%'); // Label dalam persentase
+                    }
+                  )
+                ),
+                topTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                rightTitles: const AxisTitles(sideTitles: SideTitles(showTitles: false)),
               ),
+              gridData: const FlGridData(show: true, drawVerticalLine: false),
+              borderData: FlBorderData(show: false),
             ),
           ),
-          const SizedBox(height: 10),
-          Align(
-            alignment: Alignment.centerRight,
-            child: ElevatedButton.icon(
-              onPressed: () {},
-              icon: const FaIcon(FontAwesomeIcons.filePdf, size: 16),
-              label: const Text("Ekspor Laporan (PDF/CSV)"),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal,
-                foregroundColor: Colors.white,
-              ),
+        ),
+        const SizedBox(height: 10),
+        Align(
+          alignment: Alignment.centerRight,
+          child: ElevatedButton.icon(
+            onPressed: () {},
+            icon: const FaIcon(FontAwesomeIcons.filePdf, size: 16),
+            label: const Text("Ekspor Laporan (PDF/CSV)"),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.teal,
+              foregroundColor: Colors.white,
             ),
           ),
-        ],
-      ),
-    );
+        ),
+      ],
+    ),
+  );
   }
 }
