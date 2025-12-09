@@ -91,6 +91,66 @@ class SmartShopPageState extends State<SmartShopPage> {
     });
   }
 
+  // --- LOGIC GAMIFICATION (POP UP & MOTIVASI) ---
+  void _checkCompletion() {
+    int total = _items.length;
+    int bought = _items.where((i) => i.sudahDibeli).length;
+    int remaining = total - bought;
+
+    if (total > 0 && remaining == 0) {
+      // KONDISI 1: SELESAI SEMUA -> POP UP CELEBRATION
+      _showCelebrationDialog();
+    } else if (remaining > 0 && remaining <= 3) {
+      // KONDISI 2: SISA SEDIKIT -> SNACKBAR MOTIVASI
+      _showCustomSnackBar("Semangat! Tinggal $remaining item lagi!", Colors.orangeAccent);
+    }
+  }
+
+  void _showCelebrationDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.emoji_events, size: 80, color: Colors.amber),
+              const SizedBox(height: 10),
+              const Text("Luar Biasa!", style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.teal)),
+              const SizedBox(height: 10),
+              const Text("Semua belanjaan sudah terbeli.\nKamu sangat produktif hari ini!", textAlign: TextAlign.center),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20))
+                ),
+                child: const Text("Tutup", style: TextStyle(color: Colors.white)),
+              )
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- FITUR PRO: HAPUS SEMUA YANG SUDAH DIBELI ---
+  void _deleteCompletedItems() {
+    int count = _items.where((i) => i.sudahDibeli).length;
+    if (count == 0) {
+      _showCustomSnackBar('Tidak ada barang yang selesai.', Colors.grey);
+      return;
+    }
+
+    setState(() {
+      _items.removeWhere((item) => item.sudahDibeli);
+    });
+    _saveItems();
+    _showCustomSnackBar('$count barang yang selesai telah dibersihkan.', Colors.purple);
+  }
+
   // --- FITUR BARU: GENERATE DUMMY DATA ---
   void _generateDummyData() {
     List<ItemBelanja> dummyData = [
@@ -170,6 +230,11 @@ class SmartShopPageState extends State<SmartShopPage> {
         _items[index].sudahDibeli = !_items[index].sudahDibeli;
       });
       _saveItems();
+      
+      // LOGIC BARU: Cek Gamification saat status berubah
+      if (_items[index].sudahDibeli) {
+         _checkCompletion(); 
+      }
     }
   }
 
@@ -233,33 +298,36 @@ class SmartShopPageState extends State<SmartShopPage> {
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 25),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+          begin: Alignment.topLeft, end: Alignment.bottomRight,
           colors: [Color(0xFF009688), Color(0xFF2196F3)],
         ),
-        borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5)),
-        ],
+        borderRadius: BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
+        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 10, offset: Offset(0, 5))],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // TITLE ROW DENGAN TOMBOL DUMMY DATA
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                'SmartShop List',
-                style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.0),
-              ),
-              IconButton(
-                icon: const Icon(Icons.playlist_add_check_circle, color: Colors.white70),
-                tooltip: 'Generate Dummy Data',
-                onPressed: _generateDummyData,
+              const Text('SmartShop List', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
+              // MENU TITIK TIGA (POPUP MENU) - FITUR BARU
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert, color: Colors.white),
+                onSelected: (value) {
+                  if (value == 'dummy') _generateDummyData();
+                  if (value == 'clear_completed') _deleteCompletedItems();
+                },
+                itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'dummy',
+                    child: Row(children: [Icon(Icons.playlist_add, color: Colors.teal), SizedBox(width: 10), Text('Isi Dummy Data')]),
+                  ),
+                  const PopupMenuItem<String>(
+                    value: 'clear_completed',
+                    child: Row(children: [Icon(Icons.delete_sweep, color: Colors.red), SizedBox(width: 10), Text('Hapus Yang Selesai')]),
+                  ),
+                ],
               ),
             ],
           ),
@@ -269,10 +337,7 @@ class SmartShopPageState extends State<SmartShopPage> {
           
           Container(
             padding: const EdgeInsets.all(15),
-            decoration: BoxDecoration(
-              color: Colors.white.withAlpha(51), 
-              borderRadius: BorderRadius.circular(20),
-            ),
+            decoration: BoxDecoration(color: Colors.white.withAlpha(51), borderRadius: BorderRadius.circular(20)),
             child: Column(
               children: [
                 Row(
@@ -285,22 +350,13 @@ class SmartShopPageState extends State<SmartShopPage> {
                 const SizedBox(height: 10),
                 Stack(
                   children: [
-                    Container(
-                      height: 12, width: double.infinity,
-                      decoration: BoxDecoration(color: Colors.white30, borderRadius: BorderRadius.circular(10)),
-                    ),
+                    Container(height: 12, width: double.infinity, decoration: BoxDecoration(color: Colors.white30, borderRadius: BorderRadius.circular(10))),
                     LayoutBuilder(
                       builder: (context, constraints) {
                         return AnimatedContainer(
-                          duration: const Duration(milliseconds: 600),
-                          curve: Curves.easeOutCubic,
-                          height: 12,
-                          width: constraints.maxWidth * percentage,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF69F0AE),
-                            borderRadius: BorderRadius.circular(10),
-                            boxShadow: const [BoxShadow(color: Color(0xFF69F0AE), blurRadius: 6, spreadRadius: 1)],
-                          ),
+                          duration: const Duration(milliseconds: 600), curve: Curves.easeOutCubic,
+                          height: 12, width: constraints.maxWidth * percentage,
+                          decoration: BoxDecoration(color: const Color(0xFF69F0AE), borderRadius: BorderRadius.circular(10), boxShadow: const [BoxShadow(color: Color(0xFF69F0AE), blurRadius: 6, spreadRadius: 1)]),
                         );
                       },
                     ),
