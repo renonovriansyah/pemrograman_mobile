@@ -91,6 +91,42 @@ class SmartShopPageState extends State<SmartShopPage> {
     });
   }
 
+  // --- FITUR BARU: GENERATE DUMMY DATA ---
+  void _generateDummyData() {
+    List<ItemBelanja> dummyData = [
+      ItemBelanja(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        nama: 'Daging Sapi Slice', jumlah: '500 Gram', kategori: 'Daging & Ikan', sudahDibeli: false),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 1).toString(),
+        nama: 'Kecap Manis', jumlah: '1 Botol', kategori: 'Bumbu Dapur', sudahDibeli: true),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 2).toString(),
+        nama: 'Mangga Harum Manis', jumlah: '2 Kg', kategori: 'Buah-buahan', sudahDibeli: false),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 3).toString(),
+        nama: 'Pasta Gigi', jumlah: '2 Pcs', kategori: 'Kebersihan', sudahDibeli: true),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 4).toString(),
+        nama: 'Keripik Kentang', jumlah: '3 Bks', kategori: 'Snack', sudahDibeli: false),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 5).toString(),
+        nama: 'Kabel Data Type-C', jumlah: '1 Pcs', kategori: 'Elektronik', sudahDibeli: false),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 6).toString(),
+        nama: 'Air Mineral Galon', jumlah: '1 Galon', kategori: 'Minuman', sudahDibeli: true),
+      ItemBelanja(
+        id: (DateTime.now().millisecondsSinceEpoch + 7).toString(),
+        nama: 'Bayam & Kangkung', jumlah: '2 Ikat', kategori: 'Sayuran', sudahDibeli: false),
+    ];
+
+    setState(() {
+      _items.addAll(dummyData); // Menambahkan ke list yang ada
+    });
+    _saveItems(); // Simpan ke storage
+    _showCustomSnackBar('8 Item Dummy berhasil ditambahkan!', Colors.purpleAccent);
+  }
+
   // --- CRUD OPERATIONS ---
 
   void _addItem(String nama, String jumlah, String satuan, String kategori) {
@@ -212,9 +248,20 @@ class SmartShopPageState extends State<SmartShopPage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'SmartShop List',
-            style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+          // TITLE ROW DENGAN TOMBOL DUMMY DATA
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'SmartShop List',
+                style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.0),
+              ),
+              IconButton(
+                icon: const Icon(Icons.playlist_add_check_circle, color: Colors.white70),
+                tooltip: 'Generate Dummy Data',
+                onPressed: _generateDummyData,
+              ),
+            ],
           ),
           const SizedBox(height: 5),
           const Text('Kelola belanjaanmu dengan profesional', style: TextStyle(color: Colors.white70, fontSize: 14)),
@@ -223,7 +270,7 @@ class SmartShopPageState extends State<SmartShopPage> {
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              color: Colors.white.withAlpha(51), // withAlpha fixed
+              color: Colors.white.withAlpha(51), 
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
@@ -244,7 +291,6 @@ class SmartShopPageState extends State<SmartShopPage> {
                     ),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        // FITUR BARU: ANIMATED CONTAINER
                         return AnimatedContainer(
                           duration: const Duration(milliseconds: 600),
                           curve: Curves.easeOutCubic,
@@ -268,7 +314,7 @@ class SmartShopPageState extends State<SmartShopPage> {
     );
   }
 
-  // FITUR BARU: SEARCH BAR + FILTER
+  // SEARCH BAR + FILTER
   Widget _buildFilterAndSearch() {
     List<String> filters = ['Semua', 'Belum', 'Sudah'];
     return Column(
@@ -468,7 +514,7 @@ class SmartShopPageState extends State<SmartShopPage> {
     );
   }
 
-  // FITUR BARU: BI-DIRECTIONAL SWIPE CARD
+  // BI-DIRECTIONAL SWIPE CARD
   Widget _buildItemCard(ItemBelanja item) {
     return Dismissible(
       key: Key(item.id),
@@ -510,7 +556,7 @@ class SmartShopPageState extends State<SmartShopPage> {
         if (direction == DismissDirection.startToEnd) {
           // GESER KE KANAN -> EDIT
           _showFormDialog(itemToEdit: item);
-          return false; // Return false agar item tidak hilang dari list
+          return false; 
         } else {
           // GESER KE KIRI -> HAPUS
           return await _confirmDelete(item);
@@ -626,7 +672,6 @@ class SmartShopPageState extends State<SmartShopPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Note: Kita menggunakan _filteredItems di sini
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Column(
