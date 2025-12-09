@@ -75,12 +75,54 @@ class SmartShopPageState extends State<SmartShopPage> {
     _showCustomSnackBar('Barang berhasil ditambahkan!', Colors.green);
   }
 
+  void _updateItem(String id, String nama, String jumlah, String satuan, String kategori) {
+    final index = _items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      setState(() {
+        _items[index].nama = nama;
+        _items[index].jumlah = '$jumlah $satuan';
+        _items[index].kategori = kategori;
+      });
+      _saveItems(); // Simpan perubahan ke storage [cite: 429]
+      _showCustomSnackBar('Data berhasil diperbarui!', Colors.blue);
+    }
+  }
+
   void _deleteItem(String id) {
     setState(() {
       _items.removeWhere((item) => item.id == id);
     });
     _saveItems();
     _showCustomSnackBar('Barang berhasil dihapus.', Colors.redAccent);
+  }
+
+  // Helper untuk memunculkan dialog konfirmasi hapus
+  Future<void> _confirmDelete(ItemBelanja item) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Hapus Item?"),
+          content: Text("Yakin ingin menghapus '${item.nama}' dari daftar?"),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: const Text("Batal", style: TextStyle(color: Colors.grey)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
+              child: const Text("Hapus", style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirm == true) {
+      _deleteItem(item.id);
+    }
   }
 
   void _toggleStatus(String id) {
@@ -224,11 +266,19 @@ class SmartShopPageState extends State<SmartShopPage> {
     );
   }
 
-  void _showAddDialog() {
-    final namaController = TextEditingController();
-    final jumlahController = TextEditingController();
-    String selectedCategory = _categories[0];
-    String selectedUnit = _units[0]; 
+  // Menggabungkan Tambah & Edit dalam satu fungsi
+  void _showFormDialog({ItemBelanja? itemToEdit}) {
+    final isEdit = itemToEdit != null; // Cek apakah ini mode edit
+    final namaController = TextEditingController(text: isEdit ? itemToEdit.nama : '');
+    // Memisahkan angka dari string jumlah untuk mode edit (misal: "2 Kg" -> diambil "2")
+    final jumlahController = TextEditingController(
+        text: isEdit ? itemToEdit.jumlah.split(' ')[0] : '');
+    
+    String selectedCategory = isEdit ? itemToEdit.kategori : _categories[0];
+    // Mengambil satuan dari string lama atau default
+    String selectedUnit = isEdit 
+        ? (itemToEdit.jumlah.split(' ').length > 1 ? itemToEdit.jumlah.split(' ')[1] : _units[0]) 
+        : _units[0];
 
     showModalBottomSheet(
       context: context,
@@ -251,17 +301,18 @@ class SmartShopPageState extends State<SmartShopPage> {
               children: [
                 Center(child: Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
                 const SizedBox(height: 20),
-                const Text('Tambah Item Baru', style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal)),
+                // Judul dinamis: Tambah atau Edit
+                Text(isEdit ? 'Edit Barang' : 'Tambah Item Baru', 
+                     style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal)),
                 const SizedBox(height: 20),
                 
                 TextField(
                   controller: namaController,
                   textCapitalization: TextCapitalization.sentences,
                   decoration: InputDecoration(
-                    labelText: 'Nama Barang', hintText: 'Contoh: Telur Ayam',
+                    labelText: 'Nama Barang',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                     filled: true, fillColor: Colors.grey[50],
-                    prefixIcon: const Icon(Icons.shopping_bag_outlined),
                   ),
                 ),
                 const SizedBox(height: 15),
@@ -274,7 +325,7 @@ class SmartShopPageState extends State<SmartShopPage> {
                         controller: jumlahController,
                         keyboardType: TextInputType.number,
                         decoration: InputDecoration(
-                          labelText: 'Jumlah', hintText: '0',
+                          labelText: 'Jumlah',
                           border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           filled: true, fillColor: Colors.grey[50],
                         ),
@@ -292,7 +343,7 @@ class SmartShopPageState extends State<SmartShopPage> {
                         ),
                         child: DropdownButtonHideUnderline(
                           child: DropdownButton<String>(
-                            value: selectedUnit,
+                            value: _units.contains(selectedUnit) ? selectedUnit : _units[0],
                             isExpanded: true,
                             items: _units.map((String value) {
                               return DropdownMenuItem<String>(value: value, child: Text(value));
@@ -312,15 +363,13 @@ class SmartShopPageState extends State<SmartShopPage> {
                   padding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
                   decoration: BoxDecoration(
                     color: Colors.grey[50],
-                    // CHANGE: withOpacity(0.5) -> withAlpha(128)
                     border: Border.all(color: Colors.teal.withAlpha(128)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: DropdownButtonHideUnderline(
                     child: DropdownButton<String>(
-                      value: selectedCategory,
+                      value: _categories.contains(selectedCategory) ? selectedCategory : _categories[0],
                       isExpanded: true,
-                      icon: const Icon(Icons.category, color: Colors.teal),
                       items: _categories.map((String category) {
                         return DropdownMenuItem<String>(
                           value: category,
@@ -344,7 +393,13 @@ class SmartShopPageState extends State<SmartShopPage> {
                   child: ElevatedButton(
                     onPressed: () {
                       if (namaController.text.isNotEmpty && jumlahController.text.isNotEmpty) {
-                        _addItem(namaController.text, jumlahController.text, selectedUnit, selectedCategory);
+                        if (isEdit) {
+                          // LOGIC UPDATE [cite: 125, 126]
+                          _updateItem(itemToEdit.id, namaController.text, jumlahController.text, selectedUnit, selectedCategory);
+                        } else {
+                          // LOGIC CREATE [cite: 112]
+                          _addItem(namaController.text, jumlahController.text, selectedUnit, selectedCategory);
+                        }
                         Navigator.pop(context);
                       } else {
                         _showCustomSnackBar('Mohon lengkapi data', Colors.orange);
@@ -355,7 +410,8 @@ class SmartShopPageState extends State<SmartShopPage> {
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
                       elevation: 2,
                     ),
-                    child: const Text('Simpan Barang', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                    child: Text(isEdit ? 'Update Barang' : 'Simpan Barang', 
+                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
@@ -367,47 +423,22 @@ class SmartShopPageState extends State<SmartShopPage> {
   }
 
   Widget _buildItemCard(ItemBelanja item) {
+    // Tetap bungkus dengan Dismissible agar fitur swipe masih bisa dipakai (opsional)
     return Dismissible(
       key: Key(item.id),
       direction: DismissDirection.endToStart,
       confirmDismiss: (direction) async {
-        return await showDialog(
-          context: context,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              title: const Text("Konfirmasi Hapus"),
-              content: Text("Yakin ingin menghapus ${item.nama}?"),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(false),
-                  child: const Text("Batal", style: TextStyle(color: Colors.grey)),
-                ),
-                ElevatedButton(
-                  onPressed: () => Navigator.of(context).pop(true),
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                  child: const Text("Hapus", style: TextStyle(color: Colors.white)),
-                ),
-              ],
-            );
-          },
-        );
-      },
-      onDismissed: (direction) {
-        _deleteItem(item.id);
+        // Panggil dialog yang sama saat di-swipe
+        await _confirmDelete(item);
+        return false; // Return false karena penghapusan ditangani oleh _deleteItem di dalam _confirmDelete
       },
       background: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 25),
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
         decoration: BoxDecoration(
-          color: const Color(0xFFFF5252),
-          borderRadius: BorderRadius.circular(15),
-          boxShadow: [
-            // CHANGE: withOpacity(0.3) -> withAlpha(77)
-            BoxShadow(color: Colors.red.withAlpha(77), blurRadius: 8, offset: const Offset(0, 4))
-          ],
-        ),
+            color: const Color(0xFFFF5252),
+            borderRadius: BorderRadius.circular(15)),
         child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
       ),
       child: Container(
@@ -416,8 +447,10 @@ class SmartShopPageState extends State<SmartShopPage> {
           color: item.sudahDibeli ? Colors.grey[100] : Colors.white,
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
-            // CHANGE: withOpacity(0.05) -> withAlpha(13)
-            BoxShadow(color: Colors.black.withAlpha(13), blurRadius: 10, offset: const Offset(0, 4)),
+            BoxShadow(
+                color: Colors.black.withAlpha(13),
+                blurRadius: 10,
+                offset: const Offset(0, 4))
           ],
         ),
         child: ClipRRect(
@@ -426,59 +459,99 @@ class SmartShopPageState extends State<SmartShopPage> {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                // 1. Strip Warna Kategori
                 Container(
                   width: 15,
-                  color: item.sudahDibeli ? Colors.grey[400] : (_categoryColors[item.kategori] ?? Colors.grey),
+                  color: item.sudahDibeli
+                      ? Colors.grey[400]
+                      : (_categoryColors[item.kategori] ?? Colors.grey),
                 ),
+                // 2. Konten Utama
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 0, 12), // Padding kanan 0 agar muat tombol
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Text(
-                                item.nama,
-                                style: TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.bold,
-                                  decoration: item.sudahDibeli ? TextDecoration.lineThrough : null,
-                                  decorationThickness: 2, decorationColor: Colors.grey,
-                                  color: item.sudahDibeli ? Colors.grey : const Color(0xFF2D3436),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Row(
-                                children: [
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      // CHANGE: withOpacity(0.1) -> withAlpha(26)
-                                      color: Colors.teal.withAlpha(26), 
-                                      borderRadius: BorderRadius.circular(4)
-                                    ),
-                                    child: Text(item.jumlah, style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.teal[700])),
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(item.kategori, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                                ],
-                              ),
-                            ],
+                        Text(
+                          item.nama,
+                          style: TextStyle(
+                            fontSize: 16, // Sedikit diperkecil agar muat
+                            fontWeight: FontWeight.bold,
+                            decoration: item.sudahDibeli
+                                ? TextDecoration.lineThrough
+                                : null,
+                            color: item.sudahDibeli
+                                ? Colors.grey
+                                : const Color(0xFF2D3436),
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        Transform.scale(
-                          scale: 1.2,
-                          child: Checkbox(
-                            value: item.sudahDibeli,
-                            activeColor: Colors.teal,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
-                            side: BorderSide(color: Colors.grey.shade400, width: 2),
-                            onChanged: (val) => _toggleStatus(item.id),
-                          ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 2),
+                              decoration: BoxDecoration(
+                                  color: Colors.teal.withAlpha(26),
+                                  borderRadius: BorderRadius.circular(4)),
+                              child: Text(
+                                item.jumlah,
+                                style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.teal[700]),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Text(item.kategori,
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.grey[600])),
+                          ],
                         ),
                       ],
+                    ),
+                  ),
+                ),
+                // 3. Action Buttons (Edit & Delete)
+                if (!item.sudahDibeli)
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      // Tombol Edit (Pensil)
+                      IconButton(
+                        constraints: const BoxConstraints(), // Memperkecil padding default
+                        padding: const EdgeInsets.all(8),
+                        icon: const Icon(Icons.edit_outlined,
+                            color: Colors.orange, size: 22),
+                        onPressed: () => _showFormDialog(itemToEdit: item),
+                        tooltip: 'Edit',
+                      ),
+                      // Tombol Delete (Sampah) - INI YANG BARU
+                      IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                        icon: const Icon(Icons.delete_outline,
+                            color: Colors.redAccent, size: 22),
+                        onPressed: () => _confirmDelete(item),
+                        tooltip: 'Hapus',
+                      ),
+                    ],
+                  ),
+                // 4. Checkbox
+                Padding(
+                  padding: const EdgeInsets.only(right: 8.0),
+                  child: Transform.scale(
+                    scale: 1.1,
+                    child: Checkbox(
+                      value: item.sudahDibeli,
+                      activeColor: Colors.teal,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(4)),
+                      onChanged: (val) => _toggleStatus(item.id),
                     ),
                   ),
                 ),
@@ -527,7 +600,7 @@ class SmartShopPageState extends State<SmartShopPage> {
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showAddDialog,
+        onPressed: _showFormDialog,
         backgroundColor: Colors.teal,
         elevation: 4,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
