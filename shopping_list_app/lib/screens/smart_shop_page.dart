@@ -12,16 +12,18 @@ class SmartShopPage extends StatefulWidget {
 }
 
 class SmartShopPageState extends State<SmartShopPage> {
+  // LIST DATA
   List<ItemBelanja> _items = [];
-  String _filterStatus = 'Semua'; 
+  List<ItemBelanja> _filteredItems = []; // List hasil filter/search
+  String _filterStatus = 'Semua';
+  final TextEditingController _searchController = TextEditingController();
 
-  // Daftar Kategori
+  // DATA STATIC
   final List<String> _categories = [
     'Daging & Ikan', 'Sayuran', 'Buah-buahan', 'Bumbu Dapur',
     'Minuman', 'Snack', 'Elektronik', 'Kebersihan', 'Lainnya'
   ];
 
-  // Mapping Warna Kategori
   final Map<String, Color> _categoryColors = {
     'Daging & Ikan': Colors.redAccent,
     'Sayuran': Colors.green,
@@ -40,7 +42,17 @@ class SmartShopPageState extends State<SmartShopPage> {
   void initState() {
     super.initState();
     _loadItems();
+    // Listener untuk Search Bar (Live Search)
+    _searchController.addListener(_filterItems);
   }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // --- LOGIC LOAD & SAVE ---
 
   Future<void> _loadItems() async {
     final prefs = await SharedPreferences.getInstance();
@@ -49,18 +61,37 @@ class SmartShopPageState extends State<SmartShopPage> {
       List<dynamic> itemsJson = jsonDecode(itemsString);
       setState(() {
         _items = itemsJson.map((json) => ItemBelanja.fromJson(json)).toList();
+        _filterItems(); // Jalankan filter saat data dimuat
       });
     }
   }
 
   Future<void> _saveItems() async {
     final prefs = await SharedPreferences.getInstance();
-    List<Map<String, dynamic>> itemsJson =
-        _items.map((item) => item.toJson()).toList();
+    List<Map<String, dynamic>> itemsJson = _items.map((item) => item.toJson()).toList();
     await prefs.setString('smart_shop_list', jsonEncode(itemsJson));
+    _filterItems(); // Update tampilan setelah simpan
   }
 
-  // --- LOGIC CRUD ---
+  // LOGIC FILTER GABUNGAN (SEARCH + STATUS)
+  void _filterItems() {
+    String query = _searchController.text.toLowerCase();
+    setState(() {
+      _filteredItems = _items.where((item) {
+        // 1. Cek Status Filter
+        bool statusMatch = true;
+        if (_filterStatus == 'Belum') statusMatch = !item.sudahDibeli;
+        if (_filterStatus == 'Sudah') statusMatch = item.sudahDibeli;
+        
+        // 2. Cek Search Query
+        bool searchMatch = item.nama.toLowerCase().contains(query);
+
+        return statusMatch && searchMatch;
+      }).toList();
+    });
+  }
+
+  // --- CRUD OPERATIONS ---
 
   void _addItem(String nama, String jumlah, String satuan, String kategori) {
     setState(() {
@@ -76,34 +107,44 @@ class SmartShopPageState extends State<SmartShopPage> {
   }
 
   void _updateItem(String id, String nama, String jumlah, String satuan, String kategori) {
-    final index = _items.indexWhere((item) => item.id == id);
+    int index = _items.indexWhere((item) => item.id == id);
     if (index != -1) {
       setState(() {
         _items[index].nama = nama;
         _items[index].jumlah = '$jumlah $satuan';
         _items[index].kategori = kategori;
       });
-      _saveItems(); // Simpan perubahan ke storage [cite: 429]
-      _showCustomSnackBar('Data berhasil diperbarui!', Colors.blue);
+      _saveItems();
+      _showCustomSnackBar('Barang berhasil diperbarui!', Colors.blueAccent);
     }
   }
 
-  void _deleteItem(String id) {
+  void deleteItem(String id) {
     setState(() {
       _items.removeWhere((item) => item.id == id);
     });
     _saveItems();
-    _showCustomSnackBar('Barang berhasil dihapus.', Colors.redAccent);
+    _showCustomSnackBar('Barang dihapus.', Colors.redAccent);
   }
 
-  // Helper untuk memunculkan dialog konfirmasi hapus
-  Future<void> _confirmDelete(ItemBelanja item) async {
+  void _toggleStatus(String id) {
+    int index = _items.indexWhere((item) => item.id == id);
+    if (index != -1) {
+      setState(() {
+        _items[index].sudahDibeli = !_items[index].sudahDibeli;
+      });
+      _saveItems();
+    }
+  }
+
+  // Helper Konfirmasi Hapus
+  Future<bool> _confirmDelete(ItemBelanja item) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
         return AlertDialog(
           title: const Text("Hapus Item?"),
-          content: Text("Yakin ingin menghapus '${item.nama}' dari daftar?"),
+          content: Text("Yakin ingin menghapus '${item.nama}'?"),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
           actions: [
             TextButton(
@@ -119,25 +160,13 @@ class SmartShopPageState extends State<SmartShopPage> {
         );
       },
     );
-
-    if (confirm == true) {
-      _deleteItem(item.id);
-    }
-  }
-
-  void _toggleStatus(String id) {
-    int index = _items.indexWhere((item) => item.id == id);
-    if (index != -1) {
-      setState(() {
-        _items[index].sudahDibeli = !_items[index].sudahDibeli;
-      });
-      _saveItems();
-    }
+    return confirm ?? false;
   }
 
   // --- UI COMPONENTS ---
 
   void _showCustomSnackBar(String message, Color color) {
+    ScaffoldMessenger.of(context).hideCurrentSnackBar(); // Hapus snackbar lama biar responsif
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -156,6 +185,7 @@ class SmartShopPageState extends State<SmartShopPage> {
     );
   }
 
+  // DASHBOARD DENGAN ANIMASI PROGRESS BAR
   Widget _buildDashboard() {
     int total = _items.length;
     int terbeli = _items.where((item) => item.sudahDibeli).length;
@@ -193,8 +223,7 @@ class SmartShopPageState extends State<SmartShopPage> {
           Container(
             padding: const EdgeInsets.all(15),
             decoration: BoxDecoration(
-              // CHANGE: withOpacity(0.2) -> withAlpha(51)
-              color: Colors.white.withAlpha(51), 
+              color: Colors.white.withAlpha(51), // withAlpha fixed
               borderRadius: BorderRadius.circular(20),
             ),
             child: Column(
@@ -215,7 +244,10 @@ class SmartShopPageState extends State<SmartShopPage> {
                     ),
                     LayoutBuilder(
                       builder: (context, constraints) {
-                        return Container(
+                        // FITUR BARU: ANIMATED CONTAINER
+                        return AnimatedContainer(
+                          duration: const Duration(milliseconds: 600),
+                          curve: Curves.easeOutCubic,
                           height: 12,
                           width: constraints.maxWidth * percentage,
                           decoration: BoxDecoration(
@@ -236,46 +268,63 @@ class SmartShopPageState extends State<SmartShopPage> {
     );
   }
 
-  Widget _buildFilter() {
+  // FITUR BARU: SEARCH BAR + FILTER
+  Widget _buildFilterAndSearch() {
     List<String> filters = ['Semua', 'Belum', 'Sudah'];
-    return Container(
-      height: 50,
-      margin: const EdgeInsets.symmetric(vertical: 10),
-      child: ListView.separated(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        scrollDirection: Axis.horizontal,
-        itemCount: filters.length,
-        separatorBuilder: (c, i) => const SizedBox(width: 10),
-        itemBuilder: (context, index) {
-          String filter = filters[index];
-          bool isSelected = _filterStatus == filter;
-          return ChoiceChip(
-            label: Text(filter),
-            selected: isSelected,
-            selectedColor: Colors.teal,
-            backgroundColor: Colors.white,
-            labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
-            onSelected: (selected) {
-              setState(() {
-                _filterStatus = filter;
-              });
+    return Column(
+      children: [
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          child: TextField(
+            controller: _searchController,
+            decoration: InputDecoration(
+              hintText: 'Cari barang...',
+              prefixIcon: const Icon(Icons.search, color: Colors.teal),
+              contentPadding: const EdgeInsets.symmetric(vertical: 0),
+              border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+              filled: true,
+              fillColor: Colors.white,
+            ),
+          ),
+        ),
+        Container(
+          height: 40,
+          margin: const EdgeInsets.only(bottom: 10),
+          child: ListView.separated(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            scrollDirection: Axis.horizontal,
+            itemCount: filters.length,
+            separatorBuilder: (c, i) => const SizedBox(width: 10),
+            itemBuilder: (context, index) {
+              String filter = filters[index];
+              bool isSelected = _filterStatus == filter;
+              return ChoiceChip(
+                label: Text(filter),
+                selected: isSelected,
+                selectedColor: Colors.teal,
+                backgroundColor: Colors.white,
+                labelStyle: TextStyle(color: isSelected ? Colors.white : Colors.black87),
+                onSelected: (selected) {
+                  setState(() {
+                    _filterStatus = filter;
+                    _filterItems(); // Re-filter saat chip diklik
+                  });
+                },
+              );
             },
-          );
-        },
-      ),
+          ),
+        ),
+      ],
     );
   }
 
-  // Menggabungkan Tambah & Edit dalam satu fungsi
+  // DIALOG FORM (CREATE & UPDATE)
   void _showFormDialog({ItemBelanja? itemToEdit}) {
-    final isEdit = itemToEdit != null; // Cek apakah ini mode edit
+    final isEdit = itemToEdit != null;
     final namaController = TextEditingController(text: isEdit ? itemToEdit.nama : '');
-    // Memisahkan angka dari string jumlah untuk mode edit (misal: "2 Kg" -> diambil "2")
-    final jumlahController = TextEditingController(
-        text: isEdit ? itemToEdit.jumlah.split(' ')[0] : '');
+    final jumlahController = TextEditingController(text: isEdit ? itemToEdit.jumlah.split(' ')[0] : '');
     
     String selectedCategory = isEdit ? itemToEdit.kategori : _categories[0];
-    // Mengambil satuan dari string lama atau default
     String selectedUnit = isEdit 
         ? (itemToEdit.jumlah.split(' ').length > 1 ? itemToEdit.jumlah.split(' ')[1] : _units[0]) 
         : _units[0];
@@ -301,7 +350,6 @@ class SmartShopPageState extends State<SmartShopPage> {
               children: [
                 Center(child: Container(width: 50, height: 5, decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(10)))),
                 const SizedBox(height: 20),
-                // Judul dinamis: Tambah atau Edit
                 Text(isEdit ? 'Edit Barang' : 'Tambah Item Baru', 
                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.teal)),
                 const SizedBox(height: 20),
@@ -394,10 +442,8 @@ class SmartShopPageState extends State<SmartShopPage> {
                     onPressed: () {
                       if (namaController.text.isNotEmpty && jumlahController.text.isNotEmpty) {
                         if (isEdit) {
-                          // LOGIC UPDATE [cite: 125, 126]
                           _updateItem(itemToEdit.id, namaController.text, jumlahController.text, selectedUnit, selectedCategory);
                         } else {
-                          // LOGIC CREATE [cite: 112]
                           _addItem(namaController.text, jumlahController.text, selectedUnit, selectedCategory);
                         }
                         Navigator.pop(context);
@@ -422,25 +468,54 @@ class SmartShopPageState extends State<SmartShopPage> {
     );
   }
 
+  // FITUR BARU: BI-DIRECTIONAL SWIPE CARD
   Widget _buildItemCard(ItemBelanja item) {
-    // Tetap bungkus dengan Dismissible agar fitur swipe masih bisa dipakai (opsional)
     return Dismissible(
       key: Key(item.id),
-      direction: DismissDirection.endToStart,
-      confirmDismiss: (direction) async {
-        // Panggil dialog yang sama saat di-swipe
-        await _confirmDelete(item);
-        return false; // Return false karena penghapusan ditangani oleh _deleteItem di dalam _confirmDelete
-      },
+      // Izinkan geser ke Kanan (Edit) dan Kiri (Hapus)
       background: Container(
+        alignment: Alignment.centerLeft,
+        padding: const EdgeInsets.only(left: 25),
+        margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
+        decoration: BoxDecoration(
+          color: Colors.orangeAccent, // Warna Background Edit
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: const Row(
+          children: [
+            Icon(Icons.edit, color: Colors.white, size: 32),
+            SizedBox(width: 10),
+            Text("Edit", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))
+          ],
+        ),
+      ),
+      secondaryBackground: Container(
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 25),
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
         decoration: BoxDecoration(
-            color: const Color(0xFFFF5252),
-            borderRadius: BorderRadius.circular(15)),
-        child: const Icon(Icons.delete_outline, color: Colors.white, size: 32),
+          color: const Color(0xFFFF5252), // Warna Background Hapus
+          borderRadius: BorderRadius.circular(15),
+        ),
+        child: const Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            Text("Hapus", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+            SizedBox(width: 10),
+            Icon(Icons.delete_outline, color: Colors.white, size: 32)
+          ],
+        ),
       ),
+      confirmDismiss: (direction) async {
+        if (direction == DismissDirection.startToEnd) {
+          // GESER KE KANAN -> EDIT
+          _showFormDialog(itemToEdit: item);
+          return false; // Return false agar item tidak hilang dari list
+        } else {
+          // GESER KE KIRI -> HAPUS
+          return await _confirmDelete(item);
+        }
+      },
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 20),
         decoration: BoxDecoration(
@@ -448,9 +523,10 @@ class SmartShopPageState extends State<SmartShopPage> {
           borderRadius: BorderRadius.circular(15),
           boxShadow: [
             BoxShadow(
-                color: Colors.black.withAlpha(13),
-                blurRadius: 10,
-                offset: const Offset(0, 4))
+              color: Colors.black.withAlpha(13),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            )
           ],
         ),
         child: ClipRRect(
@@ -469,7 +545,7 @@ class SmartShopPageState extends State<SmartShopPage> {
                 // 2. Konten Utama
                 Expanded(
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 12, 0, 12), // Padding kanan 0 agar muat tombol
+                    padding: const EdgeInsets.fromLTRB(16, 12, 0, 12),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -477,14 +553,10 @@ class SmartShopPageState extends State<SmartShopPage> {
                         Text(
                           item.nama,
                           style: TextStyle(
-                            fontSize: 16, // Sedikit diperkecil agar muat
+                            fontSize: 16,
                             fontWeight: FontWeight.bold,
-                            decoration: item.sudahDibeli
-                                ? TextDecoration.lineThrough
-                                : null,
-                            color: item.sudahDibeli
-                                ? Colors.grey
-                                : const Color(0xFF2D3436),
+                            decoration: item.sudahDibeli ? TextDecoration.lineThrough : null,
+                            color: item.sudahDibeli ? Colors.grey : const Color(0xFF2D3436),
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -493,49 +565,39 @@ class SmartShopPageState extends State<SmartShopPage> {
                         Row(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 8, vertical: 2),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                               decoration: BoxDecoration(
                                   color: Colors.teal.withAlpha(26),
                                   borderRadius: BorderRadius.circular(4)),
                               child: Text(
                                 item.jumlah,
-                                style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.teal[700]),
+                                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: Colors.teal[700]),
                               ),
                             ),
                             const SizedBox(width: 8),
-                            Text(item.kategori,
-                                style: TextStyle(
-                                    fontSize: 11, color: Colors.grey[600])),
+                            Text(item.kategori, style: TextStyle(fontSize: 11, color: Colors.grey[600])),
                           ],
                         ),
                       ],
                     ),
                   ),
                 ),
-                // 3. Action Buttons (Edit & Delete)
+                // 3. Tombol Visible (Edit & Delete)
                 if (!item.sudahDibeli)
                   Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      // Tombol Edit (Pensil)
-                      IconButton(
-                        constraints: const BoxConstraints(), // Memperkecil padding default
-                        padding: const EdgeInsets.all(8),
-                        icon: const Icon(Icons.edit_outlined,
-                            color: Colors.orange, size: 22),
-                        onPressed: () => _showFormDialog(itemToEdit: item),
-                        tooltip: 'Edit',
-                      ),
-                      // Tombol Delete (Sampah) - INI YANG BARU
                       IconButton(
                         constraints: const BoxConstraints(),
                         padding: const EdgeInsets.all(8),
-                        icon: const Icon(Icons.delete_outline,
-                            color: Colors.redAccent, size: 22),
+                        icon: const Icon(Icons.edit_outlined, color: Colors.orange, size: 22),
+                        onPressed: () => _showFormDialog(itemToEdit: item),
+                        tooltip: 'Edit',
+                      ),
+                      IconButton(
+                        constraints: const BoxConstraints(),
+                        padding: const EdgeInsets.all(8),
+                        icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 22),
                         onPressed: () => _confirmDelete(item),
                         tooltip: 'Hapus',
                       ),
@@ -549,8 +611,7 @@ class SmartShopPageState extends State<SmartShopPage> {
                     child: Checkbox(
                       value: item.sudahDibeli,
                       activeColor: Colors.teal,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(4)),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
                       onChanged: (val) => _toggleStatus(item.id),
                     ),
                   ),
@@ -565,42 +626,37 @@ class SmartShopPageState extends State<SmartShopPage> {
 
   @override
   Widget build(BuildContext context) {
-    List<ItemBelanja> filteredItems = _items.where((item) {
-      if (_filterStatus == 'Belum') return !item.sudahDibeli;
-      if (_filterStatus == 'Sudah') return item.sudahDibeli;
-      return true;
-    }).toList();
-
+    // Note: Kita menggunakan _filteredItems di sini
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       body: Column(
         children: [
           _buildDashboard(),
-          _buildFilter(),
+          _buildFilterAndSearch(),
           Expanded(
-            child: filteredItems.isEmpty
+            child: _filteredItems.isEmpty
                 ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.filter_list_off, size: 80, color: Colors.grey[300]),
+                        Icon(Icons.search_off, size: 80, color: Colors.grey[300]),
                         const SizedBox(height: 16),
-                        Text('Tidak ada item di kategori ini', style: TextStyle(fontSize: 16, color: Colors.grey[400])),
+                        Text('Item tidak ditemukan', style: TextStyle(fontSize: 16, color: Colors.grey[400])),
                       ],
                     ),
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.only(top: 5, bottom: 80),
-                    itemCount: filteredItems.length,
+                    itemCount: _filteredItems.length,
                     itemBuilder: (context, index) {
-                      return _buildItemCard(filteredItems[index]);
+                      return _buildItemCard(_filteredItems[index]);
                     },
                   ),
           ),
         ],
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _showFormDialog,
+        onPressed: () => _showFormDialog(),
         backgroundColor: Colors.teal,
         elevation: 4,
         child: const Icon(Icons.add, color: Colors.white, size: 28),
