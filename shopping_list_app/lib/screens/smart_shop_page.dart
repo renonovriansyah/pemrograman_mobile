@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/item_belanja.dart';
+import 'package:flutter/services.dart';
 import 'dart:math';
 
 class SmartShopPage extends StatefulWidget {
@@ -187,6 +188,42 @@ class SmartShopPageState extends State<SmartShopPage> {
     _showCustomSnackBar('8 Item Dummy berhasil ditambahkan!', Colors.purpleAccent);
   }
 
+  // --- FITUR PRO: COPY KE CLIPBOARD ---
+  void _copyToClipboard() {
+    if (_items.isEmpty) {
+      _showCustomSnackBar('Daftar belanja kosong, tidak ada yang disalin.', Colors.grey);
+      return;
+    }
+
+    StringBuffer sb = StringBuffer();
+    sb.writeln("🛒 *Daftar Belanja SmartShop* 🛒\n");
+    
+    // Pisahkan yang belum dan sudah dibeli agar rapi
+    List<ItemBelanja> belum = _items.where((i) => !i.sudahDibeli).toList();
+    List<ItemBelanja> sudah = _items.where((i) => i.sudahDibeli).toList();
+
+    if (belum.isNotEmpty) {
+      sb.writeln("*Belum Dibeli:*");
+      for (var item in belum) {
+        sb.writeln("⬜ ${item.nama} (${item.jumlah})");
+      }
+      sb.writeln(""); // Enter
+    }
+
+    if (sudah.isNotEmpty) {
+      sb.writeln("*Sudah Selesai:*");
+      for (var item in sudah) {
+        sb.writeln("✅ ~${item.nama}~ (${item.jumlah})");
+      }
+    }
+
+    sb.writeln("\n_Dibuat dengan SmartShop App_");
+
+    Clipboard.setData(ClipboardData(text: sb.toString())).then((_) {
+      _showCustomSnackBar('Daftar belanja disalin! Siap ditempel di WA.', Colors.teal);
+    });
+  }
+
   // --- CRUD OPERATIONS ---
 
   void _addItem(String nama, String jumlah, String satuan, String kategori) {
@@ -312,13 +349,19 @@ class SmartShopPageState extends State<SmartShopPage> {
             children: [
               const Text('SmartShop List', style: TextStyle(color: Colors.white, fontSize: 28, fontWeight: FontWeight.bold, letterSpacing: 1.0)),
               // MENU TITIK TIGA (POPUP MENU) - FITUR BARU
+              // MENU TITIK TIGA (POPUP MENU)
               PopupMenuButton<String>(
                 icon: const Icon(Icons.more_vert, color: Colors.white),
                 onSelected: (value) {
                   if (value == 'dummy') _generateDummyData();
                   if (value == 'clear_completed') _deleteCompletedItems();
+                  if (value == 'share') _copyToClipboard(); // AKSI BARU
                 },
                 itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                  const PopupMenuItem<String>(
+                    value: 'share', // MENU BARU
+                    child: Row(children: [Icon(Icons.copy_all, color: Colors.blue), SizedBox(width: 10), Text('Salin Daftar Belanja')]),
+                  ),
                   const PopupMenuItem<String>(
                     value: 'dummy',
                     child: Row(children: [Icon(Icons.playlist_add, color: Colors.teal), SizedBox(width: 10), Text('Isi Dummy Data')]),
