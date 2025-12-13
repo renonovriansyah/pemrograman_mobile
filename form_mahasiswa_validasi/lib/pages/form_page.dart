@@ -14,12 +14,10 @@ class FormMahasiswaValidasiPage extends StatefulWidget {
 }
 
 class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
-  // --- KUNCI VALIDASI TERPISAH (Agar validasi per step) ---
-  final _identitasKey = GlobalKey<FormState>(); // Key untuk Step 1
-  final _akademikKey = GlobalKey<FormState>();  // Key untuk Step 2
-  // Step 3 tidak butuh FormKey karena validasinya manual (Checkbox/Switch)
+  // --- KEYS & CONTROLLERS (Tetap Sama) ---
+  final _identitasKey = GlobalKey<FormState>();
+  final _akademikKey = GlobalKey<FormState>();
 
-  // Controllers
   final _namaController = TextEditingController();
   final _emailController = TextEditingController();
   final _phoneController = TextEditingController();
@@ -28,7 +26,7 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
   final _emailFocusNode = FocusNode();
   final _phoneFocusNode = FocusNode();
 
-  // State
+  // --- STATE VARIABLES (Tetap Sama) ---
   int _currentStep = 0;
   String? _selectedJurusan;
   double _semester = 1.0;
@@ -40,7 +38,6 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
     'Coding': false, 'Desain UI/UX': false, 'Gaming': false, 'Musik': false,
   };
   late Map<String, bool> _hobbies;
-
   final List<String> _jurusanList = [
     'Teknik Informatika', 'Sistem Informasi', 'Manajemen Informatika', 'Teknik Komputer',
   ];
@@ -51,13 +48,13 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
     _hobbies = Map.from(_initialHobbies);
     _loadDraft();
 
-    // Auto-Save listeners
+    // Listeners
     _namaController.addListener(() => _saveToPrefs('nama', _namaController.text));
     _emailController.addListener(() => _saveToPrefs('email', _emailController.text));
     _phoneController.addListener(() => _saveToPrefs('phone', _phoneController.text));
   }
 
-  // --- SHARED PREFERENCES ---
+  // --- LOGIKA SHARED PREFERENCES (Tetap Sama) ---
   Future<void> _saveToPrefs(String key, String value) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, value);
@@ -98,6 +95,7 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
     super.dispose();
   }
 
+  // --- UI LOGIC: DATE PICKER (Dipercantik) ---
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -108,9 +106,14 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
         return Theme(
           data: Theme.of(context).copyWith(
             colorScheme: const ColorScheme.light(
-              primary: Color(0xFF6200EA), 
-              onPrimary: Colors.white, 
-              onSurface: Color(0xFF2D2D2D),
+              primary: Color(0xFF4F46E5), // Indigo sesuai tema
+              onPrimary: Colors.white,
+              onSurface: Color(0xFF1E293B),
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(
+                foregroundColor: const Color(0xFF4F46E5),
+              ),
             ),
           ),
           child: child!,
@@ -130,7 +133,8 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Hapus Draft?'),
-        content: const Text('Data yang tersimpan di memori akan dihapus permanen.'),
+        content: const Text('Data yang tersimpan akan dihapus permanen.'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         actions: [
           TextButton(onPressed: () => Navigator.pop(context), child: const Text('Batal')),
           TextButton(
@@ -159,59 +163,45 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
       _showAgreementError = false;
       _hobbies = Map.from(_initialHobbies);
     });
-    // Reset kedua key form
     _identitasKey.currentState?.reset();
     _akademikKey.currentState?.reset();
     
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Formulir berhasil direset')),
-    );
+    _showSnack('Formulir berhasil direset', isError: false);
   }
 
-  // --- LOGIKA "LANJUT" DENGAN VALIDASI ---
+  // --- LOGIKA STEPPER & SUBMIT (Tetap Sama) ---
   void _handleNextStep() {
-    _saveOthers(); // Auto-save draft
-
+    _saveOthers();
     if (_currentStep == 0) {
-      // --- VALIDASI STEP 1 (IDENTITAS) ---
       if (_identitasKey.currentState!.validate()) {
         setState(() => _currentStep += 1);
       } else {
-        _showSnack('Mohon lengkapi data identitas dengan benar', isError: true);
+        _showSnack('Lengkapi data identitas', isError: true);
       }
     } else if (_currentStep == 1) {
-      // --- VALIDASI STEP 2 (AKADEMIK) ---
       if (_akademikKey.currentState!.validate()) {
         setState(() => _currentStep += 1);
       } else {
-        _showSnack('Mohon lengkapi data akademik', isError: true);
+        _showSnack('Lengkapi data akademik', isError: true);
       }
     } else {
-      // --- SUBMIT FINAL (STEP 3) ---
       _submitForm();
     }
   }
 
   void _submitForm() async {
-    // Validasi Manual Step 3
     if (!_hobbies.containsValue(true)) {
       _showSnack('Pilih minimal satu hobi!', isError: true);
       return;
     }
     if (!_agreement) {
       setState(() => _showAgreementError = true);
-      _showSnack('Anda harus menyetujui syarat & ketentuan.', isError: true);
+      _showSnack('Setujui syarat & ketentuan.', isError: true);
       return;
     }
 
-    // Jika sampai sini, berarti Step 3 valid.
-    // (Step 1 & 2 sudah divalidasi saat tombol "Lanjut")
-    
-    debugPrint("Semua Validasi Sukses, Mulai Loading...");
-    
     setState(() => _isLoading = true);
     await Future.delayed(const Duration(seconds: 2));
-    
     if (!mounted) return;
     setState(() => _isLoading = false);
 
@@ -242,172 +232,234 @@ class _FormMahasiswaValidasiPageState extends State<FormMahasiswaValidasiPage> {
   void _showSnack(String message, {required bool isError}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(message),
-        backgroundColor: isError ? Colors.redAccent : Colors.teal,
+        content: Text(message, style: const TextStyle(color: Colors.white)),
+        backgroundColor: isError ? Colors.redAccent : const Color(0xFF0EA5E9),
         behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        margin: const EdgeInsets.all(20),
       ),
     );
   }
 
+  // --- BUILD UI UTAMA (Updated) ---
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF6200EA),
-              Color(0xFF9900FF),
-              Color(0xFF00BFA5),
-            ],
-          ),
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    const Text(
-                      'Smart Enroll',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.delete_outline, color: Colors.white),
-                      tooltip: 'Reset Draft',
-                      onPressed: _confirmReset,
-                    ),
-                  ],
-                ),
+      backgroundColor: const Color(0xFFF8F9FD), // Warna Background Modern
+      body: Stack(
+        children: [
+          // 1. BACKGROUND HEADER (Gradient Curve)
+          Container(
+            height: 280,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF4F46E5), // Indigo
+                  Color(0xFF0EA5E9), // Sky Blue
+                ],
               ),
-              Expanded(
-                child: Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(top: 10),
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
+              borderRadius: BorderRadius.only(
+                bottomLeft: Radius.circular(40),
+                bottomRight: Radius.circular(40),
+              ),
+            ),
+          ),
+          
+          SafeArea(
+            child: Column(
+              children: [
+                // 2. HEADER TEXT & RESET BUTTON
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(24, 20, 24, 30),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: const [
+                          Text(
+                            'Smart Enroll',
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 26,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          SizedBox(height: 4),
+                          Text(
+                            'Lengkapi data diri Anda',
+                            style: TextStyle(color: Colors.white70, fontSize: 14),
+                          ),
+                        ],
+                      ),
+                      // Tombol Reset Transparan
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white.withAlpha(15),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(Icons.refresh_rounded, color: Colors.white),
+                          tooltip: 'Reset Data',
+                          onPressed: _confirmReset,
+                        ),
+                      ),
+                    ],
                   ),
-                  child: ClipRRect(
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(30),
-                      topRight: Radius.circular(30),
-                    ),
-                    // CATATAN: Form Luar dihapus, diganti Form per Step
-                    child: Stepper(
-                      type: StepperType.horizontal,
-                      elevation: 0,
-                      currentStep: _currentStep,
-                      connectorColor: WidgetStateProperty.resolveWith((states) {
-                        return states.contains(WidgetState.selected) ? const Color(0xFF6200EA) : Colors.grey.shade300;
-                      }),
-                      controlsBuilder: (context, details) {
-                        return Padding(
-                          padding: const EdgeInsets.only(top: 30.0),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton(
-                                  // Panggil fungsi _handleNextStep saat tombol ditekan
-                                  onPressed: _isLoading ? null : _handleNextStep,
-                                  child: _isLoading 
-                                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white))
-                                      : Text(_currentStep == 2 ? 'SUBMIT' : 'LANJUT'),
-                                ),
-                              ),
-                              if (_currentStep > 0 && !_isLoading) ...[
-                                const SizedBox(width: 12),
-                                TextButton(
-                                  onPressed: details.onStepCancel,
-                                  child: const Text('KEMBALI'),
-                                ),
-                              ],
-                            ],
-                          ),
-                        );
-                      },
-                      onStepContinue: _handleNextStep,
-                      onStepCancel: () {
-                        if (_currentStep > 0) setState(() => _currentStep -= 1);
-                      },
-                      steps: [
-                        // --- STEP 1: Form Identitas ---
-                        Step(
-                          title: const Text('Profil'),
-                          isActive: _currentStep >= 0,
-                          state: _currentStep > 0 ? StepState.complete : StepState.indexed,
-                          content: Form( // Bungkus dengan Form khusus Step 1
-                            key: _identitasKey,
-                            autovalidateMode: AutovalidateMode.onUserInteraction,
-                            child: StepIdentitas(
-                              namaController: _namaController,
-                              emailController: _emailController,
-                              phoneController: _phoneController,
-                              tglLahirController: _tglLahirController,
-                              emailFocusNode: _emailFocusNode,
-                              phoneFocusNode: _phoneFocusNode,
-                              onTapTglLahir: () => _selectDate(context),
-                            ),
-                          ),
-                        ),
-                        // --- STEP 2: Form Akademik ---
-                        Step(
-                          title: const Text('Studi'),
-                          isActive: _currentStep >= 1,
-                          state: _currentStep > 1 ? StepState.complete : StepState.indexed,
-                          content: Form( // Bungkus dengan Form khusus Step 2
-                            key: _akademikKey,
-                            autovalidateMode: AutovalidateMode.onUserInteraction,
-                            child: StepAkademik(
-                              selectedJurusan: _selectedJurusan,
-                              jurusanList: _jurusanList,
-                              semester: _semester,
-                              onJurusanChanged: (val) {
-                                setState(() => _selectedJurusan = val);
-                                _saveOthers();
-                              },
-                              onSemesterChanged: (val) {
-                                setState(() => _semester = val);
-                                _saveOthers();
-                              },
-                            ),
-                          ),
-                        ),
-                        // --- STEP 3: Minat (Tanpa Form Key, Manual) ---
-                        Step(
-                          title: const Text('Minat'),
-                          isActive: _currentStep >= 2,
-                          content: StepMinat(
-                            hobbies: _hobbies,
-                            agreement: _agreement,
-                            showAgreementError: _showAgreementError,
-                            onHobiChanged: (key, val) => setState(() => _hobbies[key] = val),
-                            onAgreementChanged: (val) => setState(() {
-                              _agreement = val;
-                              if (val) _showAgreementError = false;
-                            }),
-                          ),
+                ),
+
+                // 3. FLOATING FORM CARD
+                Expanded(
+                  child: Container(
+                    width: double.infinity,
+                    margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 0),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withAlpha(17),
+                          blurRadius: 20,
+                          offset: const Offset(0, -5),
                         ),
                       ],
                     ),
+                    child: ClipRRect(
+                      borderRadius: const BorderRadius.vertical(top: Radius.circular(30)),
+                      child: Theme(
+                        // Override tema Stepper agar warnanya sesuai
+                        data: Theme.of(context).copyWith(
+                          colorScheme: ColorScheme.light(primary: const Color(0xFF4F46E5)),
+                        ),
+                        child: Stepper(
+                          type: StepperType.horizontal,
+                          elevation: 0, // Hilangkan shadow bawaan Stepper
+                          currentStep: _currentStep,
+                          // Custom Icon Control
+                          controlsBuilder: (context, details) {
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 30.0, bottom: 20),
+                              child: Row(
+                                children: [
+                                  // Tombol Back (hanya muncul jika bukan step 1)
+                                  if (_currentStep > 0 && !_isLoading) ...[
+                                    Expanded(
+                                      child: OutlinedButton(
+                                        onPressed: details.onStepCancel,
+                                        style: OutlinedButton.styleFrom(
+                                          padding: const EdgeInsets.symmetric(vertical: 16),
+                                          side: const BorderSide(color: Color(0xFF4F46E5)),
+                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                        ),
+                                        child: const Text('KEMBALI', style: TextStyle(fontWeight: FontWeight.bold)),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                  ],
+                                  // Tombol Lanjut / Submit
+                                  Expanded(
+                                    flex: 2,
+                                    child: ElevatedButton(
+                                      onPressed: _isLoading ? null : _handleNextStep,
+                                      style: ElevatedButton.styleFrom(
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        backgroundColor: const Color(0xFF4F46E5),
+                                        foregroundColor: Colors.white,
+                                        elevation: 4,
+                                        shadowColor: const Color(0xFF4F46E5).withAlpha(21),
+                                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                                      ),
+                                      child: _isLoading 
+                                          ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                                          : Row(
+                                              mainAxisAlignment: MainAxisAlignment.center,
+                                              children: [
+                                                Text(_currentStep == 2 ? 'SUBMIT' : 'LANJUT', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                                                if (!_isLoading && _currentStep != 2) const Icon(Icons.arrow_forward_rounded, size: 18),
+                                              ],
+                                            ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          onStepContinue: _handleNextStep,
+                          onStepCancel: () {
+                            if (_currentStep > 0) setState(() => _currentStep -= 1);
+                          },
+                          steps: [
+                            // --- STEP 1 ---
+                            Step(
+                              title: const Text('Profil', style: TextStyle(fontSize: 12)),
+                              isActive: _currentStep >= 0,
+                              state: _currentStep > 0 ? StepState.complete : StepState.indexed,
+                              content: Form(
+                                key: _identitasKey,
+                                autovalidateMode: AutovalidateMode.onUserInteraction,
+                                child: StepIdentitas(
+                                  namaController: _namaController,
+                                  emailController: _emailController,
+                                  phoneController: _phoneController,
+                                  tglLahirController: _tglLahirController,
+                                  emailFocusNode: _emailFocusNode,
+                                  phoneFocusNode: _phoneFocusNode,
+                                  onTapTglLahir: () => _selectDate(context),
+                                ),
+                              ),
+                            ),
+                            // --- STEP 2 ---
+                            Step(
+                              title: const Text('Studi', style: TextStyle(fontSize: 12)),
+                              isActive: _currentStep >= 1,
+                              state: _currentStep > 1 ? StepState.complete : StepState.indexed,
+                              content: Form(
+                                key: _akademikKey,
+                                autovalidateMode: AutovalidateMode.onUserInteraction,
+                                child: StepAkademik(
+                                  selectedJurusan: _selectedJurusan,
+                                  jurusanList: _jurusanList,
+                                  semester: _semester,
+                                  onJurusanChanged: (val) {
+                                    setState(() => _selectedJurusan = val);
+                                    _saveOthers();
+                                  },
+                                  onSemesterChanged: (val) {
+                                    setState(() => _semester = val);
+                                    _saveOthers();
+                                  },
+                                ),
+                              ),
+                            ),
+                            // --- STEP 3 ---
+                            Step(
+                              title: const Text('Minat', style: TextStyle(fontSize: 12)),
+                              isActive: _currentStep >= 2,
+                              state: StepState.indexed,
+                              content: StepMinat(
+                                hobbies: _hobbies,
+                                agreement: _agreement,
+                                showAgreementError: _showAgreementError,
+                                onHobiChanged: (key, val) => setState(() => _hobbies[key] = val),
+                                onAgreementChanged: (val) => setState(() {
+                                  _agreement = val;
+                                  if (val) _showAgreementError = false;
+                                }),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
-        ),
+        ],
       ),
     );
   }
