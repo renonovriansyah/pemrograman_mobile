@@ -1,28 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'fade_animation.dart'; // Import animasi
+import 'fade_animation.dart';
 
 class StepIdentitas extends StatelessWidget {
   final TextEditingController namaController;
   final TextEditingController emailController;
   final TextEditingController phoneController;
+  final TextEditingController tglLahirController;
   final FocusNode emailFocusNode;
   final FocusNode phoneFocusNode;
+  final VoidCallback onTapTglLahir;
 
   const StepIdentitas({
     super.key,
     required this.namaController,
     required this.emailController,
     required this.phoneController,
+    required this.tglLahirController,
     required this.emailFocusNode,
     required this.phoneFocusNode,
+    required this.onTapTglLahir,
   });
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // Delay 0ms
+        // Input Nama Lengkap (DENGAN VALIDASI BARU)
         FadeAnimation(
           delay: 0,
           child: TextFormField(
@@ -30,19 +34,46 @@ class StepIdentitas extends StatelessWidget {
             decoration: const InputDecoration(
               labelText: 'Nama Lengkap',
               prefixIcon: Icon(Icons.person_outline),
+              hintText: 'Sesuai KTM',
             ),
             textInputAction: TextInputAction.next,
             onFieldSubmitted: (_) => FocusScope.of(context).requestFocus(emailFocusNode),
             validator: (value) {
-              if (value == null || value.isEmpty) return 'Nama wajib diisi';
-              if (value.length < 3) return 'Nama terlalu pendek';
-              return null;
+              if (value == null || value.isEmpty) {
+                return 'Nama wajib diisi';
+              }
+              // REGEX: Hanya huruf, spasi, titik, dan petik satu (')
+              // ^ = awal, $ = akhir, + = satu karakter atau lebih
+              if (!RegExp(r"^[a-zA-Z\s\.\']+$").hasMatch(value)) {
+                return 'Nama tidak boleh mengandung angka atau simbol lain';
+              }
+              if (value.length < 3) {
+                return 'Nama terlalu pendek (min 3 karakter)';
+              }
+              return null; // Valid
             },
           ),
         ),
         const SizedBox(height: 16),
         
-        // Delay 100ms (Muncul sedikit lebih lambat)
+        // Input Tanggal Lahir
+        FadeAnimation(
+          delay: 0.5,
+          child: TextFormField(
+            controller: tglLahirController,
+            readOnly: true,
+            onTap: onTapTglLahir,
+            decoration: const InputDecoration(
+              labelText: 'Tanggal Lahir',
+              prefixIcon: Icon(Icons.calendar_today_outlined),
+              hintText: 'Pilih Tanggal',
+            ),
+            validator: (value) => (value == null || value.isEmpty) ? 'Tanggal lahir wajib diisi' : null,
+          ),
+        ),
+        const SizedBox(height: 16),
+
+        // Input Email
         FadeAnimation(
           delay: 1,
           child: TextFormField(
@@ -65,9 +96,9 @@ class StepIdentitas extends StatelessWidget {
         ),
         const SizedBox(height: 16),
         
-        // Delay 200ms
+        // Input HP
         FadeAnimation(
-          delay: 2,
+          delay: 1.5,
           child: TextFormField(
             controller: phoneController,
             focusNode: phoneFocusNode,
@@ -77,7 +108,7 @@ class StepIdentitas extends StatelessWidget {
             ),
             keyboardType: TextInputType.phone,
             inputFormatters: [FilteringTextInputFormatter.digitsOnly],
-            validator: (value) => (value == null || value.length < 10) ? 'Nomor HP tidak valid' : null,
+            validator: (value) => (value == null || value.length < 10) ? 'Nomor HP tidak valid (min 10 angka)' : null,
           ),
         ),
       ],

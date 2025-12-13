@@ -64,10 +64,19 @@ class StepAkademik extends StatelessWidget {
                       style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                     ),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
-                        color: Colors.indigo.shade50,
-                        borderRadius: BorderRadius.circular(8),
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(20),
+                        // Menambahkan bayangan lembut (Soft Shadow)
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.grey.withAlpha(12),
+                            blurRadius: 10,
+                            offset: const Offset(0, 5),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.grey.shade100),
                       ),
                       child: Text(
                         'Semester ${semester.toInt()}',
