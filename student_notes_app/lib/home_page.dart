@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
+import 'package:google_fonts/google_fonts.dart';
 import 'note_model.dart';
 import 'note_form_page.dart';
 import 'storage_service.dart';
@@ -60,26 +60,72 @@ class _HomePageState extends State<HomePage> {
     });
   }
   
-  void _deleteNote(String id) {
-    setState(() {
-      _notes.removeWhere((n) => n.id == id);
-      StorageService.saveNotes(_notes);
-      _filterNotes();
-    });
+  // --- HAPUS CATATAN ---
+  Future<void> _deleteNote(String id) async {
+    final bool? confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: widget.isDarkMode ? const Color(0xFF2C2C3E) : Colors.white,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text('Hapus Catatan?', 
+          style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
+        content: Text('Catatan ini akan dihapus permanen.',
+          style: TextStyle(color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600])),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red[400],
+              elevation: 0,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Hapus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      if (!mounted) return; 
+      setState(() {
+        _notes.removeWhere((n) => n.id == id);
+        StorageService.saveNotes(_notes);
+        _filterNotes();
+      });
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: const [
+              Icon(Icons.delete_outline_rounded, color: Colors.white),
+              SizedBox(width: 10),
+              Text('Catatan dihapus'),
+            ],
+          ),
+          backgroundColor: Colors.red[400],
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+        ),
+      );
+    }
   }
   
+  // --- PIN CATATAN ---
   void _togglePin(String id) {
     setState(() {
       final index = _notes.indexWhere((n) => n.id == id);
       if (index != -1) {
-        // Cek Limit Pin: Maksimal 3
         if (!_notes[index].isPinned) {
           final pinnedCount = _notes.where((n) => n.isPinned).length;
           if (pinnedCount >= 3) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: const Text('Maksimal hanya 3 catatan yang dapat disematkan!', style: TextStyle(color: Colors.white)),
-                backgroundColor: Colors.red[400],
+                backgroundColor: Colors.orange[800],
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
               ),
@@ -87,7 +133,6 @@ class _HomePageState extends State<HomePage> {
             return;
           }
         }
-        
         _notes[index].isPinned = !_notes[index].isPinned;
         StorageService.saveNotes(_notes);
         _filterNotes();
@@ -95,11 +140,10 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  // --- NAVIGASI KE FORM & VALIDASI SUKSES ---
   Future<void> _navigateToForm({Note? note}) async {
-    // Hitung jumlah pin untuk dikirim ke form (validasi di sana)
     final pinnedCount = _notes.where((n) => n.isPinned).length;
 
-    // Kita mengirim 'note' jika ini adalah mode Edit
     final result = await Navigator.push(
       context,
       PageRouteBuilder(
@@ -118,13 +162,34 @@ class _HomePageState extends State<HomePage> {
     if (result != null && result is Note) {
       setState(() {
         int index = _notes.indexWhere((n) => n.id == result.id);
+        
+        // Cek apakah ini Update atau Baru untuk pesan SnackBar
+        String message = index != -1 ? 'Catatan berhasil diperbarui! ✨' : 'Catatan baru dibuat! 🎉';
+        
         if (index != -1) {
-          _notes[index] = result; // Update Existing
+          _notes[index] = result; // Update
         } else {
-          _notes.add(result); // Add New
+          _notes.add(result); // Baru
         }
         StorageService.saveNotes(_notes);
         _filterNotes();
+
+        // TAMPILKAN VALIDASI SUKSES
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle_rounded, color: Colors.white),
+                const SizedBox(width: 10),
+                Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            backgroundColor: const Color(0xFF059669), // Emerald Green
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            duration: const Duration(seconds: 2),
+          ),
+        );
       });
     }
   }
@@ -135,13 +200,13 @@ class _HomePageState extends State<HomePage> {
     final txtColor = widget.isDarkMode ? Colors.white : Colors.black87;
 
     return Scaffold(
-      backgroundColor: widget.isDarkMode ? const Color(0xFF1F1F2E) : const Color(0xFFF9FAFB), // Smooth background handled by AnimatedContainer below if needed, or Main MaterialApp
+      backgroundColor: widget.isDarkMode ? const Color(0xFF1F1F2E) : const Color(0xFFF9FAFB), 
       body: SafeArea(
         child: Column(
           children: [
-            // 1. CUSTOM HEADER (ANIMATED)
+            // 1. HEADER
             AnimatedContainer(
-              duration: const Duration(milliseconds: 500), // Transisi halus
+              duration: const Duration(milliseconds: 500),
               curve: Curves.easeInOut,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
@@ -196,7 +261,7 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // Search Bar (Animated)
+                  // Search Bar
                   FadeInUp(
                     delay: const Duration(milliseconds: 300),
                     child: AnimatedContainer(
@@ -225,7 +290,7 @@ class _HomePageState extends State<HomePage> {
               ),
             ),
 
-            // 2. CATEGORY PILLS (Horizontal Scroll)
+            // 2. CATEGORY PILLS
             const SizedBox(height: 16),
             FadeInRight(
               delay: const Duration(milliseconds: 400),
@@ -240,7 +305,7 @@ class _HomePageState extends State<HomePage> {
                     final isSelected = _selectedCategory == cat;
                     
                     final activeColor = cat == 'Semua' 
-                        ? const Color.fromARGB(255, 227, 234, 90) // Kuning
+                        ? const Color.fromARGB(255, 227, 234, 90)
                         : (categoryColors[cat] ?? const Color(0xFF6C63FF));
                     
                     return GestureDetector(
@@ -267,9 +332,7 @@ class _HomePageState extends State<HomePage> {
                           child: Text(
                             cat,
                             style: TextStyle(
-                              color: isSelected 
-                                ? Colors.white 
-                                : Colors.grey[500],
+                              color: isSelected ? Colors.white : Colors.grey[500],
                               fontWeight: FontWeight.bold,
                               fontSize: 13
                             ),
@@ -290,11 +353,7 @@ class _HomePageState extends State<HomePage> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Image.network(
-                              'https://cdn-icons-png.flaticon.com/512/7486/7486744.png', 
-                              height: 150,
-                              errorBuilder: (context, error, stackTrace) => const Icon(Icons.edit_note, size: 80, color: Colors.grey),
-                            ),
+                            Icon(Icons.note_alt_outlined, size: 80, color: Colors.grey[300]),
                             const SizedBox(height: 20),
                             Text('Belum ada catatan di sini', style: TextStyle(color: Colors.grey[400])),
                           ],
@@ -322,7 +381,7 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: const Color(0xFF6C63FF),
           onPressed: () => _navigateToForm(),
           label: const Text('Buat Catatan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          icon: const Icon(Icons.add_rounded, color: Colors.white),
+          icon: const Icon(Icons.note_add_rounded, color: Colors.white), // Icon Cantik
           elevation: 5,
         ),
       ),
@@ -334,8 +393,8 @@ class _HomePageState extends State<HomePage> {
     final isDark = widget.isDarkMode;
 
     return BouncingButton(
-      onPressed: () => _navigateToForm(note: note), // INI MODE EDIT: Mengirim data note
-      child: AnimatedContainer( // Ubah ke AnimatedContainer
+      onPressed: () => _navigateToForm(note: note), 
+      child: AnimatedContainer(
         duration: const Duration(milliseconds: 500),
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
@@ -373,27 +432,32 @@ class _HomePageState extends State<HomePage> {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: color.withAlpha(30),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Text(
-                          note.category.toUpperCase(),
-                          // PENGGUNAAN GOOGLE FONTS & BOLD STYLE
-                          style: GoogleFonts.poppins(
-                            fontSize: 11, 
-                            fontWeight: FontWeight.w900, // Extra Bold
-                            color: color,
-                            letterSpacing: 1.2, // Spasi antar huruf lebih lebar
+                      Hero(
+                        tag: 'category_${note.id}', 
+                        child: Material(
+                          color: Colors.transparent,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: color.withAlpha(30),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              note.category.toUpperCase(),
+                              style: GoogleFonts.poppins(
+                                fontSize: 11, 
+                                fontWeight: FontWeight.w900,
+                                color: color,
+                                letterSpacing: 1.2,
+                              ),
+                            ),
                           ),
                         ),
                       ),
                       if (note.isPinned)
                         Pulse(
                           infinite: true,
-                          child: Icon(Icons.push_pin, color: Colors.orange[400], size: 18),
+                          child: Icon(Icons.push_pin_rounded, color: Colors.orange[400], size: 18),
                         )
                     ],
                   ),
@@ -425,7 +489,7 @@ class _HomePageState extends State<HomePage> {
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.calendar_today_rounded, size: 14, color: Colors.grey[400]),
+                          Icon(Icons.calendar_month_rounded, size: 14, color: Colors.grey[400]),
                           const SizedBox(width: 6),
                           Text(
                             DateFormat('d MMM y').format(note.date),
@@ -439,10 +503,10 @@ class _HomePageState extends State<HomePage> {
                         child: Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: Colors.red.withAlpha(20),
+                            color: Colors.red.withAlpha(15),
                             shape: BoxShape.circle
                           ),
-                          child: const Icon(Icons.delete_outline_rounded, size: 18, color: Colors.red),
+                          child: const Icon(Icons.delete_rounded, size: 20, color: Colors.redAccent), // Icon Sampah Cantik
                         ),
                       )
                     ],
@@ -453,7 +517,7 @@ class _HomePageState extends State<HomePage> {
              Positioned(
                right: 0, top: 0,
                child: IconButton(
-                 icon: const Icon(Icons.more_horiz, color: Colors.transparent),
+                 icon: const Icon(Icons.more_horiz_rounded, color: Colors.transparent),
                  onPressed: () => _togglePin(note.id),
                ),
              )
@@ -464,7 +528,6 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
-// Widget BouncingButton
 class BouncingButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
-import 'package:google_fonts/google_fonts.dart'; // Jangan lupa import ini
+import 'package:google_fonts/google_fonts.dart';
 import 'note_model.dart';
 import 'home_page.dart'; 
 
@@ -30,7 +30,6 @@ class _NoteFormPageState extends State<NoteFormPage> {
   @override
   void initState() {
     super.initState();
-    // Isi data jika mode edit
     _titleController = TextEditingController(text: widget.existingNote?.title ?? '');
     _contentController = TextEditingController(text: widget.existingNote?.content ?? '');
     
@@ -40,13 +39,43 @@ class _NoteFormPageState extends State<NoteFormPage> {
     }
   }
 
+  Future<bool> _shouldAllowPop() async {
+    final initialTitle = widget.existingNote?.title ?? '';
+    final initialContent = widget.existingNote?.content ?? '';
+    
+    final hasChanges = _titleController.text != initialTitle || 
+                       _contentController.text != initialContent;
+
+    if (!hasChanges) return true;
+
+    final shouldPop = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Theme.of(context).cardColor,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Simpan Perubahan?'),
+        content: const Text('Kamu sudah mengetik tapi belum menyimpan. Yakin ingin keluar?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false), 
+            child: const Text('Lanjut Mengedit'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true), 
+            child: const Text('Buang Perubahan', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    return shouldPop ?? false;
+  }
+
   void _togglePinState() {
     if (isPinned) {
       setState(() => isPinned = false);
     } else {
-      // Cek Limit Pin
       int othersPinnedCount = widget.currentPinnedCount;
-      // Jika sedang edit nota yang SUDAH dipin, kurangi hitungan agar tidak double count
       if (widget.existingNote != null && widget.existingNote!.isPinned) {
         othersPinnedCount -= 1;
       }
@@ -55,7 +84,7 @@ class _NoteFormPageState extends State<NoteFormPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Maksimal 3 catatan pinned!', style: TextStyle(color: Colors.white)),
-            backgroundColor: Colors.red[400],
+            backgroundColor: Colors.orange[800],
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             duration: const Duration(seconds: 2),
@@ -77,14 +106,13 @@ class _NoteFormPageState extends State<NoteFormPage> {
   void _saveNote() {
     if (!_formKey.currentState!.validate()) return;
     
-    // Jika ID null (baru), buat ID baru. Jika ada (edit), pakai ID lama.
     final String id = widget.existingNote?.id ?? const Uuid().v4(); 
     
     final note = Note(
       id: id,
       title: _titleController.text.trim(),
       content: _contentController.text.trim(),
-      date: DateTime.now(), // Update tanggal ke waktu edit terakhir
+      date: DateTime.now(),
       category: _selectedCategory,
       isPinned: isPinned,
     );
@@ -93,154 +121,185 @@ class _NoteFormPageState extends State<NoteFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil warna kategori dari home_page.dart
     final themeColor = categoryColors[_selectedCategory] ?? Colors.indigo;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
-    // Background mengikuti Theme global agar transisi halus
-    return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: isDark ? Colors.white : Colors.black87),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          // Tombol Pin
-          IconButton(
-            icon: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-            color: isPinned ? Colors.orange : (isDark ? Colors.grey : Colors.grey[600]),
-            onPressed: _togglePinState,
+    return PopScope(
+      canPop: false, 
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) {
+          return;
+        }
+        final bool shouldPop = await _shouldAllowPop();
+        if (shouldPop) {
+          if (context.mounted) {
+            Navigator.pop(context); 
+          }
+        }
+      },
+      child: Scaffold(
+        backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
+        appBar: AppBar(
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: isDark ? Colors.white : Colors.black87),
+            onPressed: () async {
+               final bool shouldPop = await _shouldAllowPop();
+               if (shouldPop && context.mounted) {
+                 Navigator.pop(context);
+               }
+            },
           ),
-          // Tombol Simpan
-          Padding(
-            padding: const EdgeInsets.only(right: 16.0),
-            child: IconButton(
-              onPressed: _saveNote,
-              icon: const Icon(Icons.check_circle, size: 30),
-              color: themeColor, 
+          actions: [
+            IconButton(
+              icon: Icon(isPinned ? Icons.push_pin_rounded : Icons.push_pin_outlined, size: 22),
+              color: isPinned ? Colors.orange : (isDark ? Colors.grey : Colors.grey[600]),
+              onPressed: _togglePinState,
             ),
-          )
-        ],
-      ),
-      body: Form(
-        key: _formKey,
-        child: Column(
-          children: [
-            // 1. KATEGORI PILIHAN
-            FadeInDown(
-              duration: const Duration(milliseconds: 400),
-              child: SizedBox(
-                height: 60,
-                child: ListView(
-                  scrollDirection: Axis.horizontal,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                  children: categoryColors.keys.map((cat) {
+            
+            // --- TOMBOL SIMPAN YANG LEBIH CANTIK ---
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8),
+              child: ElevatedButton.icon(
+                onPressed: _saveNote,
+                icon: const Icon(Icons.save_rounded, size: 18, color: Colors.white),
+                label: const Text('Simpan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: themeColor,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  padding: const EdgeInsets.symmetric(horizontal: 16)
+                ),
+              ),
+            )
+          ],
+        ),
+        body: Form(
+          key: _formKey,
+          child: Column(
+            children: [
+              FadeInDown(
+                duration: const Duration(milliseconds: 400),
+                child: SizedBox(
+                  height: 60,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    children: categoryColors.keys.map((cat) {
                       final isSelected = _selectedCategory == cat;
                       final color = categoryColors[cat]!;
-                      return GestureDetector(
-                        onTap: () => setState(() => _selectedCategory = cat),
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 200),
-                          margin: const EdgeInsets.only(right: 12),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                          decoration: BoxDecoration(
-                            color: isSelected ? color : (isDark ? Colors.white.withAlpha(25) : color.withAlpha(24)),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected ? Colors.transparent : (isDark ? Colors.transparent : color), 
-                              width: 1
-                            )
-                          ),
-                          child: Row(
-                            children: [
-                              if(isSelected) const Icon(Icons.check, size: 14, color: Colors.white),
-                              if(isSelected) const SizedBox(width: 4),
-                              Text(cat, style: GoogleFonts.poppins( // Pakai Google Fonts
-                                color: isSelected ? Colors.white : (isDark ? Colors.white70 : color), 
-                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                                fontSize: 12
-                              )),
-                            ],
-                          ),
+                      
+                      Widget chipWidget = AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        margin: const EdgeInsets.only(right: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: isSelected ? color : (isDark ? Colors.white.withAlpha(25) : color.withAlpha(24)),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isSelected ? Colors.transparent : (isDark ? Colors.transparent : color), 
+                            width: 1
+                          )
+                        ),
+                        child: Row(
+                          children: [
+                            if(isSelected) const Icon(Icons.check_rounded, size: 14, color: Colors.white),
+                            if(isSelected) const SizedBox(width: 4),
+                            Text(cat, style: GoogleFonts.poppins(
+                              color: isSelected ? Colors.white : (isDark ? Colors.white70 : color), 
+                              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                              fontSize: 12
+                            )),
+                          ],
                         ),
                       );
-                  }).toList(),
+
+                      if (widget.existingNote != null && cat == widget.existingNote!.category) {
+                        return GestureDetector(
+                          onTap: () => setState(() => _selectedCategory = cat),
+                          child: Hero(
+                            tag: 'category_${widget.existingNote!.id}', 
+                            child: Material(
+                              color: Colors.transparent,
+                              child: chipWidget
+                            ),
+                          ),
+                        );
+                      }
+
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = cat),
+                        child: chipWidget,
+                      );
+                    }).toList(),
+                  ),
                 ),
               ),
-            ),
 
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                child: ListView(
-                  children: [
-                    const SizedBox(height: 10),
-                    
-                    // 2. INPUT JUDUL (BOLD & POPPINS)
-                    FadeInLeft(
-                      delay: const Duration(milliseconds: 200),
-                      child: TextFormField(
-                        controller: _titleController,
-                        style: GoogleFonts.poppins( // Pakai Font Poppins
-                          fontSize: 26, 
-                          fontWeight: FontWeight.w700, // Bold tebal
-                          color: isDark ? Colors.white : const Color(0xFF2D3142),
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Judul...',
-                          border: InputBorder.none,
-                          hintStyle: GoogleFonts.poppins(
-                            color: Colors.grey[400], 
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 24),
+                  child: ListView(
+                    children: [
+                      const SizedBox(height: 10),
+                      FadeInLeft(
+                        delay: const Duration(milliseconds: 200),
+                        child: TextFormField(
+                          controller: _titleController,
+                          style: GoogleFonts.poppins(
                             fontSize: 26, 
-                            fontWeight: FontWeight.w700
+                            fontWeight: FontWeight.w700, 
+                            color: isDark ? Colors.white : const Color(0xFF2D3142),
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Judul...',
+                            border: InputBorder.none,
+                            hintStyle: GoogleFonts.poppins(
+                              color: Colors.grey[400], 
+                              fontSize: 26, 
+                              fontWeight: FontWeight.w700
+                            ),
+                          ),
+                          validator: (v) => v!.trim().isEmpty ? 'Judul wajib diisi' : null,
+                        ),
+                      ),
+                      FadeInLeft(
+                        delay: const Duration(milliseconds: 300),
+                        child: Text(
+                          DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now()), 
+                          style: GoogleFonts.poppins(
+                            color: Colors.grey[500], 
+                            fontWeight: FontWeight.w500, 
+                            fontSize: 13
                           ),
                         ),
-                        validator: (v) => v!.trim().isEmpty ? 'Judul wajib diisi' : null,
                       ),
-                    ),
-                    
-                    // TANGGAL HARI INI
-                    FadeInLeft(
-                      delay: const Duration(milliseconds: 300),
-                      child: Text(
-                        DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now()), // Format Indo
-                        style: GoogleFonts.poppins(
-                          color: Colors.grey[500], 
-                          fontWeight: FontWeight.w500, 
-                          fontSize: 13
+                      const SizedBox(height: 20),
+                      FadeInUp(
+                        delay: const Duration(milliseconds: 400),
+                        child: TextFormField(
+                          controller: _contentController,
+                          maxLines: null, 
+                          style: GoogleFonts.poppins(
+                            fontSize: 16, 
+                            height: 1.6,
+                            color: isDark ? Colors.grey[300] : Colors.grey[800],
+                          ),
+                          decoration: InputDecoration(
+                            hintText: 'Tulis ceritamu di sini...',
+                            border: InputBorder.none,
+                            hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
+                          ),
+                          validator: (v) => v!.trim().isEmpty ? 'Isi tidak boleh kosong' : null,
                         ),
                       ),
-                    ),
-                    
-                    const SizedBox(height: 20),
-                    
-                    // 3. INPUT KONTEN
-                    FadeInUp(
-                      delay: const Duration(milliseconds: 400),
-                      child: TextFormField(
-                        controller: _contentController,
-                        maxLines: null, // Unlimited lines
-                        style: GoogleFonts.poppins( // Pakai Font Poppins
-                          fontSize: 16, 
-                          height: 1.6,
-                          color: isDark ? Colors.grey[300] : Colors.grey[800],
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Tulis ceritamu di sini...',
-                          border: InputBorder.none,
-                          hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
-                        ),
-                        validator: (v) => v!.trim().isEmpty ? 'Isi tidak boleh kosong' : null,
-                      ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
