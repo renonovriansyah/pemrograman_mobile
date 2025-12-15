@@ -1,41 +1,53 @@
-import 'dart:convert'; // Untuk jsonEncode dan jsonDecode
+import 'dart:convert';
+import 'package:flutter/foundation.dart'; // 1. Tambahkan ini untuk debugPrint
 import 'package:shared_preferences/shared_preferences.dart';
 import 'note_model.dart';
 
 class StorageService {
-  // Key untuk penyimpanan data di HP
   static const String _noteKey = 'notes_data';
   static const String _themeKey = 'is_dark_mode';
 
-  // --- LOGIKA MENYIMPAN DATA CATATAN ---
+  // --- SIMPAN ---
   static Future<void> saveNotes(List<Note> notes) async {
-    final prefs = await SharedPreferences.getInstance();
-    
-    // 1. Ubah List<Note> menjadi List<Map> menggunakan .toJson()
-    // 2. Ubah List<Map> menjadi String JSON menggunakan jsonEncode
-    final String encodedData = jsonEncode(
-      notes.map((note) => note.toJson()).toList()
-    );
-    
-    await prefs.setString(_noteKey, encodedData);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String encodedData = jsonEncode(
+        notes.map((note) => note.toJson()).toList()
+      );
+      await prefs.setString(_noteKey, encodedData);
+    } catch (e) {
+      // 2. Gunakan debugPrint agar linter tidak marah
+      debugPrint('Error saving notes: $e');
+    }
   }
 
-  // --- LOGIKA MENGAMBIL DATA CATATAN ---
+  // --- AMBIL (LOAD) ---
   static Future<List<Note>> loadNotes() async {
-    final prefs = await SharedPreferences.getInstance();
-    final String? notesString = prefs.getString(_noteKey);
-    
-    // Jika data kosong, kembalikan list kosong
-    if (notesString == null) return [];
-    
-    // 1. Decode String JSON menjadi List Dynamic
-    final List<dynamic> decodedData = jsonDecode(notesString);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final String? notesString = prefs.getString(_noteKey);
 
-    // 2. Ubah setiap item menjadi Object Note menggunakan .fromJson()
-    return decodedData.map((item) => Note.fromJson(item)).toList();
+      if (notesString == null) return [];
+
+      final List<dynamic> decodedData = jsonDecode(notesString);
+
+      return decodedData.map((item) {
+        if (item is Map<String, dynamic>) {
+          return Note.fromJson(item);
+        }
+        return null; 
+      })
+      .whereType<Note>()
+      .toList();
+
+    } catch (e) {
+      // 2. Gunakan debugPrint di sini juga
+      debugPrint('Error loading notes (Resetting data): $e');
+      return [];
+    }
   }
   
-  // --- LOGIKA TEMA (Dark/Light Mode) ---
+  // --- TEMA ---
   static Future<void> saveTheme(bool isDark) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_themeKey, isDark);
@@ -43,7 +55,6 @@ class StorageService {
 
   static Future<bool> loadTheme() async {
     final prefs = await SharedPreferences.getInstance();
-    // Default false (Light Mode) jika belum pernah diset
     return prefs.getBool(_themeKey) ?? false;
   }
 }
