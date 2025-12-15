@@ -30,6 +30,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  intl: ^0.18.0
+  shared_preferences: ^2.2.0
+  animate_do: ^3.3.4   # Untuk animasi mudah
+  google_fonts: ^6.1.0 # Untuk font custom
+  uuid: ^4.2.2 # Tambahkan ini untuk ID unik yang aman
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
