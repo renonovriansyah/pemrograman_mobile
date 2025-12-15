@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../widgets/fade_animation.dart';
+import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 class ResultPage extends StatelessWidget {
   final String nama;
@@ -21,89 +22,114 @@ class ResultPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Ambil inisial nama untuk avatar
+    // Ambil inisial nama
     String initials = nama.isNotEmpty 
         ? nama.trim().split(RegExp(' +')).map((s) => s[0]).take(2).join().toUpperCase() 
         : '?';
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8F9FD), // Background soft
+      backgroundColor: const Color(0xFFF1F5F9), // Slate 100 (Sama dengan Form)
       body: Stack(
         children: [
-          // 1. BACKGROUND DECORATION (Header Gradient)
-          Container(
-            height: 300,
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                colors: [
-                  Color(0xFF4F46E5), // Indigo
-                  Color(0xFF0EA5E9), // Sky Blue
-                ],
+          // --- 1. BACKGROUND DECORATION (Sama dengan Form) ---
+          Positioned(
+            top: -100,
+            left: -100,
+            child: FadeInDown(
+              duration: const Duration(milliseconds: 1200),
+              child: Container(
+                width: 300,
+                height: 300,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF6366F1).withValues(alpha: 0.15),
+                      blurRadius: 80,
+                      spreadRadius: 10,
+                    ),
+                  ],
+                ),
               ),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(50),
-                bottomRight: Radius.circular(50),
+            ),
+          ),
+          Positioned(
+            bottom: 50,
+            right: -50,
+            child: FadeInUp(
+              duration: const Duration(milliseconds: 1200),
+              child: Container(
+                width: 250,
+                height: 250,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: const Color(0xFF0EA5E9).withValues(alpha: 0.15),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF0EA5E9).withValues(alpha: 0.15),
+                      blurRadius: 60,
+                      spreadRadius: 10,
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
 
-          // 2. CONTENT
+          // --- 2. CONTENT ---
           SafeArea(
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
               child: Column(
                 children: [
+                  const SizedBox(height: 10),
+                  
+                  // SUCCESS ICON & TEXT
+                  ZoomIn(
+                    duration: const Duration(milliseconds: 800),
+                    child: Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                            blurRadius: 20,
+                            offset: const Offset(0, 8),
+                          )
+                        ],
+                      ),
+                      child: const Icon(Icons.check_rounded, size: 40, color: Color(0xFF10B981)),
+                    ),
+                  ),
+                  
                   const SizedBox(height: 20),
                   
-                  // ICON SUKSES (ANIMATED)
-                  const Hero(
-                    tag: 'profile-icon', // Tag ini harus sama dengan icon di halaman sebelumnya jika ingin efek terbang
-                    child: FadeAnimation(
-                      delay: 0.5,
-                      child: CircleAvatar(
-                        radius: 40,
-                        backgroundColor: Colors.white,
-                        child: Icon(Icons.check_rounded, size: 50, color: Color(0xFF0EA5E9)),
-                      ),
-                    ),
-                  ),
-                  
-                  const SizedBox(height: 16),
-                  
-                  FadeAnimation(
-                    delay: 0.8,
-                    child: const Text(
+                  FadeInDown(
+                    delay: const Duration(milliseconds: 200),
+                    child: Text(
                       'Registrasi Berhasil!',
-                      style: TextStyle(
-                        color: Colors.white,
+                      style: GoogleFonts.poppins(
+                        color: const Color(0xFF1E293B),
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
-                        letterSpacing: 0.5,
+                        letterSpacing: -0.5,
                       ),
                     ),
                   ),
                   
-                  const SizedBox(height: 8),
-                  
-                  FadeAnimation(
-                    delay: 1.0,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withAlpha(78), // Efek kaca transparan
-                        borderRadius: BorderRadius.circular(20), // Sudut membulat (Pill shape)
-                        border: Border.all(color: Colors.white.withAlpha(56)), // Garis tepi tipis
-                      ),
+                  FadeInDown(
+                    delay: const Duration(milliseconds: 400),
+                    child: Padding(
+                      padding: const EdgeInsets.only(top: 8.0),
                       child: Text(
-                        'Data Anda telah tersimpan di sistem.',
+                        'Kartu Mahasiswa Digital Anda telah dibuat.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Colors.black.withAlpha(92), // Putih sedikit soft
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey[500],
                           fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          letterSpacing: 0.5, // Spasi antar huruf biar rapi
                         ),
                       ),
                     ),
@@ -111,9 +137,9 @@ class ResultPage extends StatelessWidget {
 
                   const SizedBox(height: 30),
 
-                  // 3. DIGITAL ID CARD
-                  FadeAnimation(
-                    delay: 1.2,
+                  // --- 3. PREMIUM ID CARD ---
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 600),
                     child: Container(
                       width: double.infinity,
                       decoration: BoxDecoration(
@@ -121,32 +147,43 @@ class ResultPage extends StatelessWidget {
                         borderRadius: BorderRadius.circular(24),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withAlpha(19),
+                            color: const Color(0xFF64748B).withValues(alpha: 0.15),
                             blurRadius: 30,
-                            offset: const Offset(0, 10),
+                            offset: const Offset(0, 15),
                           ),
                         ],
                       ),
                       child: Column(
                         children: [
-                          // Header Kartu
+                          // A. Header Kartu (Gradient)
                           Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+                            padding: const EdgeInsets.all(24),
+                            decoration: const BoxDecoration(
+                              gradient: LinearGradient(
+                                colors: [Color(0xFF6366F1), Color(0xFF0EA5E9)],
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                              ),
+                              borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
                             ),
                             child: Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 28,
-                                  backgroundColor: const Color(0xFF4F46E5),
-                                  child: Text(
-                                    initials,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 20,
+                                Container(
+                                  padding: const EdgeInsets.all(3),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
+                                  ),
+                                  child: CircleAvatar(
+                                    radius: 30,
+                                    backgroundColor: Colors.white,
+                                    child: Text(
+                                      initials,
+                                      style: GoogleFonts.poppins(
+                                        color: const Color(0xFF6366F1),
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 22,
+                                      ),
                                     ),
                                   ),
                                 ),
@@ -157,26 +194,26 @@ class ResultPage extends StatelessWidget {
                                     children: [
                                       Text(
                                         nama,
-                                        style: const TextStyle(
+                                        style: GoogleFonts.poppins(
                                           fontSize: 18,
                                           fontWeight: FontWeight.bold,
-                                          color: Color(0xFF1E293B),
+                                          color: Colors.white,
                                         ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFFE0E7FF),
-                                          borderRadius: BorderRadius.circular(6),
+                                          color: Colors.white.withValues(alpha: 0.2),
+                                          borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(
                                           jurusan,
-                                          style: const TextStyle(
-                                            color: Color(0xFF4F46E5),
-                                            fontSize: 12,
+                                          style: GoogleFonts.poppins(
+                                            color: Colors.white,
+                                            fontSize: 11,
                                             fontWeight: FontWeight.w600,
                                           ),
                                         ),
@@ -188,27 +225,28 @@ class ResultPage extends StatelessWidget {
                             ),
                           ),
                           
-                          const Divider(height: 1, thickness: 1, color: Color(0xFFF1F5F9)),
-
-                          // Body Kartu (Detail Info)
+                          // B. Body Kartu (Detail Info)
                           Padding(
                             padding: const EdgeInsets.all(24),
                             child: Column(
                               children: [
                                 _buildDetailItem(Icons.email_outlined, 'Email', email),
                                 _buildDetailItem(Icons.phone_outlined, 'Telepon', phone),
-                                _buildDetailItem(Icons.calendar_today_outlined, 'Semester', 'Semester ${semester.toInt()}'),
+                                _buildDetailItem(Icons.school_outlined, 'Semester', 'Semester ${semester.toInt()}'),
                                 
                                 const SizedBox(height: 24),
+                                const Divider(height: 1, color: Color(0xFFE2E8F0)),
+                                const SizedBox(height: 24),
                                 
-                                const Align(
+                                Align(
                                   alignment: Alignment.centerLeft,
                                   child: Text(
                                     'Minat & Hobi',
-                                    style: TextStyle(
-                                      fontSize: 14,
+                                    style: GoogleFonts.poppins(
+                                      fontSize: 12,
                                       fontWeight: FontWeight.w600,
-                                      color: Colors.grey,
+                                      color: Colors.grey[400],
+                                      letterSpacing: 1,
                                     ),
                                   ),
                                 ),
@@ -220,15 +258,15 @@ class ResultPage extends StatelessWidget {
                                     runSpacing: 8,
                                     children: hobi.map((h) => Chip(
                                       label: Text(h),
-                                      labelStyle: const TextStyle(
-                                        color: Color(0xFF4F46E5), 
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 12
+                                      labelStyle: GoogleFonts.poppins(
+                                        color: const Color(0xFF4F46E5), 
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 11
                                       ),
-                                      backgroundColor: const Color(0xFFEEF2FF), // Very light indigo
-                                      side: const BorderSide(color: Color(0xFFC7D2FE)), // Soft border
+                                      backgroundColor: const Color(0xFFEEF2FF),
+                                      side: BorderSide.none, // Modern chip no border
                                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+                                      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                                       visualDensity: VisualDensity.compact,
                                     )).toList(),
                                   ),
@@ -237,25 +275,36 @@ class ResultPage extends StatelessWidget {
                             ),
                           ),
                           
-                          // Footer Kartu (Barcode Fake) 
+                          // C. Footer Kartu (Barcode Fake)
                           Container(
                             width: double.infinity,
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            decoration: BoxDecoration(
-                              color: Colors.grey.shade50,
-                              borderRadius: const BorderRadius.vertical(bottom: Radius.circular(24)),
-                              border: Border(top: BorderSide(color: Colors.grey.shade200)),
+                            decoration: const BoxDecoration(
+                              color: Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.vertical(bottom: Radius.circular(24)),
                             ),
-                            child: Center(
-                              child: Text(
-                                'ID: ${DateTime.now().millisecondsSinceEpoch}',
-                                style: TextStyle(
-                                  color: Colors.grey.shade400,
-                                  fontSize: 12,
-                                  letterSpacing: 2,
-                                  fontFamily: 'Courier', // Font monospaced ala tiket
+                            child: Column(
+                              children: [
+                                Text(
+                                  'ID MAHASISWA',
+                                  style: GoogleFonts.poppins(
+                                    color: Colors.grey[400],
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    letterSpacing: 1.5,
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  '${DateTime.now().millisecondsSinceEpoch}', // Random ID
+                                  style: GoogleFonts.courierPrime( // Monospace Font
+                                    color: const Color(0xFF334155),
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    letterSpacing: 2,
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                         ],
@@ -266,23 +315,24 @@ class ResultPage extends StatelessWidget {
                   const SizedBox(height: 40),
 
                   // 4. TOMBOL KEMBALI
-                  FadeAnimation(
-                    delay: 1.5,
+                  FadeInUp(
+                    delay: const Duration(milliseconds: 800),
                     child: SizedBox(
                       width: double.infinity,
+                      height: 56,
                       child: ElevatedButton(
                         onPressed: () => Navigator.pop(context),
                         style: ElevatedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          backgroundColor: const Color(0xFF4F46E5),
-                          foregroundColor: Colors.white,
-                          elevation: 4,
-                          shadowColor: const Color(0xFF4F46E5).withAlpha(15),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          backgroundColor: Colors.white,
+                          foregroundColor: const Color(0xFF4F46E5),
+                          elevation: 0,
+                          side: const BorderSide(color: Color(0xFF4F46E5), width: 1.5),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shadowColor: Colors.transparent,
                         ),
-                        child: const Text(
+                        child: Text(
                           'KEMBALI KE BERANDA',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: GoogleFonts.poppins(fontWeight: FontWeight.bold, fontSize: 16),
                         ),
                       ),
                     ),
@@ -305,10 +355,10 @@ class ResultPage extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(8),
+            padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(
               color: const Color(0xFFF1F5F9),
-              borderRadius: BorderRadius.circular(8),
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, size: 20, color: const Color(0xFF64748B)),
           ),
@@ -319,18 +369,19 @@ class ResultPage extends StatelessWidget {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 12,
-                    color: Colors.grey,
+                    color: Colors.grey[400],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 2),
                 Text(
                   value,
-                  style: const TextStyle(
+                  style: GoogleFonts.poppins(
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
-                    color: Color(0xFF334155),
+                    fontWeight: FontWeight.w600,
+                    color: const Color(0xFF1E293B),
                   ),
                 ),
               ],
