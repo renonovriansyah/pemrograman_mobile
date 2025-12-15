@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
 import 'note_model.dart';
 import 'note_form_page.dart';
 import 'storage_service.dart';
@@ -98,6 +99,7 @@ class _HomePageState extends State<HomePage> {
     // Hitung jumlah pin untuk dikirim ke form (validasi di sana)
     final pinnedCount = _notes.where((n) => n.isPinned).length;
 
+    // Kita mengirim 'note' jika ini adalah mode Edit
     final result = await Navigator.push(
       context,
       PageRouteBuilder(
@@ -117,9 +119,9 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         int index = _notes.indexWhere((n) => n.id == result.id);
         if (index != -1) {
-          _notes[index] = result;
+          _notes[index] = result; // Update Existing
         } else {
-          _notes.add(result);
+          _notes.add(result); // Add New
         }
         StorageService.saveNotes(_notes);
         _filterNotes();
@@ -133,11 +135,14 @@ class _HomePageState extends State<HomePage> {
     final txtColor = widget.isDarkMode ? Colors.white : Colors.black87;
 
     return Scaffold(
+      backgroundColor: widget.isDarkMode ? const Color(0xFF1F1F2E) : const Color(0xFFF9FAFB), // Smooth background handled by AnimatedContainer below if needed, or Main MaterialApp
       body: SafeArea(
         child: Column(
           children: [
-            // 1. CUSTOM HEADER
-            Container(
+            // 1. CUSTOM HEADER (ANIMATED)
+            AnimatedContainer(
+              duration: const Duration(milliseconds: 500), // Transisi halus
+              curve: Curves.easeInOut,
               padding: const EdgeInsets.all(24),
               decoration: BoxDecoration(
                 color: bgHeaderColor,
@@ -175,7 +180,8 @@ class _HomePageState extends State<HomePage> {
                         ],
                       ),
                       FadeInRight(
-                        child: Container(
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 500),
                           decoration: BoxDecoration(
                             color: widget.isDarkMode ? Colors.grey[800] : Colors.grey[100],
                             shape: BoxShape.circle,
@@ -190,10 +196,11 @@ class _HomePageState extends State<HomePage> {
                     ],
                   ),
                   const SizedBox(height: 20),
-                  // Search Bar
+                  // Search Bar (Animated)
                   FadeInUp(
                     delay: const Duration(milliseconds: 300),
-                    child: Container(
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 500),
                       padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         color: widget.isDarkMode ? Colors.grey[800] : const Color(0xFFF0F2F5),
@@ -312,7 +319,7 @@ class _HomePageState extends State<HomePage> {
       floatingActionButton: ZoomIn(
         delay: const Duration(milliseconds: 800),
         child: FloatingActionButton.extended(
-          backgroundColor: const Color(0xFF6C63FF), // Sesuaikan dengan warna tema
+          backgroundColor: const Color(0xFF6C63FF),
           onPressed: () => _navigateToForm(),
           label: const Text('Buat Catatan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
           icon: const Icon(Icons.add_rounded, color: Colors.white),
@@ -327,8 +334,9 @@ class _HomePageState extends State<HomePage> {
     final isDark = widget.isDarkMode;
 
     return BouncingButton(
-      onPressed: () => _navigateToForm(note: note),
-      child: Container(
+      onPressed: () => _navigateToForm(note: note), // INI MODE EDIT: Mengirim data note
+      child: AnimatedContainer( // Ubah ke AnimatedContainer
+        duration: const Duration(milliseconds: 500),
         margin: const EdgeInsets.only(bottom: 16),
         decoration: BoxDecoration(
           color: isDark ? const Color(0xFF2C2C3E) : Colors.white,
@@ -373,11 +381,12 @@ class _HomePageState extends State<HomePage> {
                         ),
                         child: Text(
                           note.category.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 10, 
-                            fontWeight: FontWeight.w800, 
+                          // PENGGUNAAN GOOGLE FONTS & BOLD STYLE
+                          style: GoogleFonts.poppins(
+                            fontSize: 11, 
+                            fontWeight: FontWeight.w900, // Extra Bold
                             color: color,
-                            letterSpacing: 1
+                            letterSpacing: 1.2, // Spasi antar huruf lebih lebar
                           ),
                         ),
                       ),
@@ -455,6 +464,7 @@ class _HomePageState extends State<HomePage> {
   }
 }
 
+// Widget BouncingButton
 class BouncingButton extends StatefulWidget {
   final Widget child;
   final VoidCallback onPressed;

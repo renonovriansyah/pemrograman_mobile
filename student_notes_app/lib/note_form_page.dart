@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
+import 'package:google_fonts/google_fonts.dart'; // Jangan lupa import ini
 import 'note_model.dart';
 import 'home_page.dart'; 
 
 class NoteFormPage extends StatefulWidget {
   final Note? existingNote;
-  final int currentPinnedCount; // [MODIFIKASI 1: Tambah parameter ini]
+  final int currentPinnedCount;
 
-  // Update Constructor
   const NoteFormPage({
     super.key, 
     this.existingNote, 
-    required this.currentPinnedCount // Wajib diisi
+    required this.currentPinnedCount
   });
 
   @override
@@ -30,45 +30,43 @@ class _NoteFormPageState extends State<NoteFormPage> {
   @override
   void initState() {
     super.initState();
+    // Isi data jika mode edit
     _titleController = TextEditingController(text: widget.existingNote?.title ?? '');
     _contentController = TextEditingController(text: widget.existingNote?.content ?? '');
+    
     if (widget.existingNote != null) {
       _selectedCategory = widget.existingNote!.category;
       isPinned = widget.existingNote!.isPinned;
     }
   }
 
-  // [MODIFIKASI 2: Logic validasi pin limit]
   void _togglePinState() {
     if (isPinned) {
-      // Kalau sudah dipin, mau un-pin -> BOLEH
       setState(() => isPinned = false);
     } else {
-      // Kalau belum dipin, mau nge-pin -> CEK LIMIT
-      
-      // Hitung jumlah pin orang lain (exclude diri sendiri jika sedang edit)
+      // Cek Limit Pin
       int othersPinnedCount = widget.currentPinnedCount;
+      // Jika sedang edit nota yang SUDAH dipin, kurangi hitungan agar tidak double count
       if (widget.existingNote != null && widget.existingNote!.isPinned) {
         othersPinnedCount -= 1;
       }
 
       if (othersPinnedCount >= 3) {
-        // Tampilkan warning
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Maksimal 3 catatan pinned!', style: TextStyle(color: Colors.white)),
             backgroundColor: Colors.red[400],
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
             duration: const Duration(seconds: 2),
           ),
         );
       } else {
-        // Boleh pin
         setState(() => isPinned = true);
       }
     }
   }
 
-  // ... (dispose dan _saveNote TETAP SAMA seperti sebelumnya)
   @override
   void dispose() {
     _titleController.dispose();
@@ -78,12 +76,15 @@ class _NoteFormPageState extends State<NoteFormPage> {
 
   void _saveNote() {
     if (!_formKey.currentState!.validate()) return;
+    
+    // Jika ID null (baru), buat ID baru. Jika ada (edit), pakai ID lama.
     final String id = widget.existingNote?.id ?? const Uuid().v4(); 
+    
     final note = Note(
       id: id,
       title: _titleController.text.trim(),
       content: _contentController.text.trim(),
-      date: DateTime.now(),
+      date: DateTime.now(), // Update tanggal ke waktu edit terakhir
       category: _selectedCategory,
       isPinned: isPinned,
     );
@@ -92,23 +93,28 @@ class _NoteFormPageState extends State<NoteFormPage> {
 
   @override
   Widget build(BuildContext context) {
-    final themeColor = categoryColors[_selectedCategory] ?? Colors.black;
+    // Ambil warna kategori dari home_page.dart
+    final themeColor = categoryColors[_selectedCategory] ?? Colors.indigo;
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    // Background mengikuti Theme global agar transisi halus
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1E1E2C) : Colors.white,
+      backgroundColor: Theme.of(context).scaffoldBackgroundColor, 
       appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
+          icon: Icon(Icons.arrow_back_ios_new_rounded, size: 20, color: isDark ? Colors.white : Colors.black87),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
-          // [MODIFIKASI 3: Panggil _togglePinState di onPressed]
+          // Tombol Pin
           IconButton(
             icon: Icon(isPinned ? Icons.push_pin : Icons.push_pin_outlined),
-            color: isPinned ? Colors.orange : null,
-            onPressed: _togglePinState, // Panggil fungsi validasi tadi
+            color: isPinned ? Colors.orange : (isDark ? Colors.grey : Colors.grey[600]),
+            onPressed: _togglePinState,
           ),
+          // Tombol Simpan
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: IconButton(
@@ -119,86 +125,113 @@ class _NoteFormPageState extends State<NoteFormPage> {
           )
         ],
       ),
-      // ... (Body TETAP SAMA seperti sebelumnya)
       body: Form(
         key: _formKey,
         child: Column(
           children: [
+            // 1. KATEGORI PILIHAN
             FadeInDown(
+              duration: const Duration(milliseconds: 400),
               child: SizedBox(
                 height: 60,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
                   padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                   children: categoryColors.keys.map((cat) {
-                     final isSelected = _selectedCategory == cat;
-                     final color = categoryColors[cat]!;
-                     return GestureDetector(
-                       onTap: () => setState(() => _selectedCategory = cat),
-                       child: AnimatedContainer(
-                         duration: const Duration(milliseconds: 200),
-                         margin: const EdgeInsets.only(right: 12),
-                         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                         decoration: BoxDecoration(
-                           color: isSelected ? color : color.withAlpha(30),
-                           borderRadius: BorderRadius.circular(20),
-                           border: Border.all(color: isSelected ? Colors.transparent : color, width: 1.5)
-                         ),
-                         child: Row(
-                           children: [
-                             if(isSelected) const Icon(Icons.check, size: 14, color: Colors.white),
-                             if(isSelected) const SizedBox(width: 4),
-                             Text(cat, style: TextStyle(
-                               color: isSelected ? Colors.white : color, 
-                               fontWeight: FontWeight.bold,
-                               fontSize: 12
-                             )),
-                           ],
-                         ),
-                       ),
-                     );
+                      final isSelected = _selectedCategory == cat;
+                      final color = categoryColors[cat]!;
+                      return GestureDetector(
+                        onTap: () => setState(() => _selectedCategory = cat),
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 200),
+                          margin: const EdgeInsets.only(right: 12),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          decoration: BoxDecoration(
+                            color: isSelected ? color : (isDark ? Colors.white.withAlpha(25) : color.withAlpha(24)),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected ? Colors.transparent : (isDark ? Colors.transparent : color), 
+                              width: 1
+                            )
+                          ),
+                          child: Row(
+                            children: [
+                              if(isSelected) const Icon(Icons.check, size: 14, color: Colors.white),
+                              if(isSelected) const SizedBox(width: 4),
+                              Text(cat, style: GoogleFonts.poppins( // Pakai Google Fonts
+                                color: isSelected ? Colors.white : (isDark ? Colors.white70 : color), 
+                                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                                fontSize: 12
+                              )),
+                            ],
+                          ),
+                        ),
+                      );
                   }).toList(),
                 ),
               ),
             ),
+
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 24),
                 child: ListView(
                   children: [
                     const SizedBox(height: 10),
+                    
+                    // 2. INPUT JUDUL (BOLD & POPPINS)
                     FadeInLeft(
                       delay: const Duration(milliseconds: 200),
                       child: TextFormField(
                         controller: _titleController,
-                        style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
-                        decoration: const InputDecoration(
+                        style: GoogleFonts.poppins( // Pakai Font Poppins
+                          fontSize: 26, 
+                          fontWeight: FontWeight.w700, // Bold tebal
+                          color: isDark ? Colors.white : const Color(0xFF2D3142),
+                        ),
+                        decoration: InputDecoration(
                           hintText: 'Judul...',
                           border: InputBorder.none,
-                          hintStyle: TextStyle(color: Colors.grey, fontSize: 26, fontWeight: FontWeight.w900),
+                          hintStyle: GoogleFonts.poppins(
+                            color: Colors.grey[400], 
+                            fontSize: 26, 
+                            fontWeight: FontWeight.w700
+                          ),
                         ),
                         validator: (v) => v!.trim().isEmpty ? 'Judul wajib diisi' : null,
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    
+                    // TANGGAL HARI INI
                     FadeInLeft(
                       delay: const Duration(milliseconds: 300),
                       child: Text(
-                        DateFormat('EEEE, d MMMM yyyy').format(DateTime.now()),
-                        style: TextStyle(color: Colors.grey[400], fontWeight: FontWeight.w600, fontSize: 13),
+                        DateFormat('EEEE, d MMMM yyyy', 'id_ID').format(DateTime.now()), // Format Indo
+                        style: GoogleFonts.poppins(
+                          color: Colors.grey[500], 
+                          fontWeight: FontWeight.w500, 
+                          fontSize: 13
+                        ),
                       ),
                     ),
+                    
                     const SizedBox(height: 20),
+                    
+                    // 3. INPUT KONTEN
                     FadeInUp(
                       delay: const Duration(milliseconds: 400),
                       child: TextFormField(
                         controller: _contentController,
-                        maxLines: null,
-                        style: const TextStyle(fontSize: 16, height: 1.6),
-                        decoration: const InputDecoration(
+                        maxLines: null, // Unlimited lines
+                        style: GoogleFonts.poppins( // Pakai Font Poppins
+                          fontSize: 16, 
+                          height: 1.6,
+                          color: isDark ? Colors.grey[300] : Colors.grey[800],
+                        ),
+                        decoration: InputDecoration(
                           hintText: 'Tulis ceritamu di sini...',
                           border: InputBorder.none,
-                          hintStyle: TextStyle(color: Colors.grey),
+                          hintStyle: GoogleFonts.poppins(color: Colors.grey[400]),
                         ),
                         validator: (v) => v!.trim().isEmpty ? 'Isi tidak boleh kosong' : null,
                       ),

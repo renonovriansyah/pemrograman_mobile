@@ -1,12 +1,10 @@
-import 'dart:convert';
-
 class Note {
   String id;
   String title;
   String content;
   DateTime date;
-  String category; // Fitur Tugas Pertemuan 8
-  bool isPinned;   // Fitur Extra
+  String category;
+  bool isPinned;
 
   Note({
     required this.id,
@@ -17,7 +15,25 @@ class Note {
     this.isPinned = false,
   });
 
-  Map<String, dynamic> toMap() {
+  // --- PEMBARUAN DI SINI ---
+  
+  // 1. Ubah dari 'fromMap' menjadi 'fromJson'
+  // Menerima Map<String, dynamic> agar kompatibel dengan jsonDecode
+  factory Note.fromJson(Map<String, dynamic> json) {
+    return Note(
+      id: json['id'],
+      title: json['title'],
+      content: json['content'],
+      date: DateTime.parse(json['date']),
+      category: json['category'],
+      // Gunakan operator ?? false untuk jaga-jaga jika data lama tidak punya field isPinned
+      isPinned: json['isPinned'] ?? false, 
+    );
+  }
+
+  // 2. Ubah dari 'toMap' menjadi 'toJson'
+  // Mengembalikan Map<String, dynamic> agar kompatibel dengan jsonEncode
+  Map<String, dynamic> toJson() {
     return {
       'id': id,
       'title': title,
@@ -27,18 +43,4 @@ class Note {
       'isPinned': isPinned,
     };
   }
-
-  factory Note.fromMap(Map<String, dynamic> map) {
-    return Note(
-      id: map['id'],
-      title: map['title'],
-      content: map['content'],
-      date: DateTime.parse(map['date']),
-      category: map['category'],
-      isPinned: map['isPinned'] ?? false,
-    );
-  }
-
-  String toJson() => json.encode(toMap());
-  factory Note.fromJson(String source) => Note.fromMap(json.decode(source));
 }
