@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
+import 'package:google_fonts/google_fonts.dart'; 
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/form_page.dart';
 
-// Ubah main menjadi async untuk persiapan inisialisasi
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
@@ -22,17 +21,21 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'Smart Enroll Pro',
       
-      // --- TEMA APLIKASI YANG DIPERBARUI ---
+      // --- TEMA APLIKASI MODERN ---
       theme: ThemeData(
         useMaterial3: true,
         
-        // 1. Warna Dasar & Skema Warna Professional
-        scaffoldBackgroundColor: const Color(0xFFF8F9FD), // Background soft (bukan putih polos)
+        // 1. Warna Dasar & Skema Warna
+        // Menggunakan warna Slate-100 agar sama persis dengan background FormPage
+        scaffoldBackgroundColor: const Color(0xFFF1F5F9), 
+        
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF4F46E5), // Indigo (Warna Utama)
-          secondary: const Color(0xFF0EA5E9), // Sky Blue (Warna Aksen)
+          seedColor: const Color(0xFF6366F1), // Indigo (Warna Gradien Utama)
+          primary: const Color(0xFF6366F1),
+          secondary: const Color(0xFF0EA5E9), // Sky Blue
           surface: Colors.white,
-          brightness: Brightness.light,
+          // Mengatur tint surface agar dialog tidak berwarna pinkish/ungu di Material 3
+          surfaceTint: Colors.transparent, 
         ),
 
         // 2. Typography Modern (Poppins)
@@ -40,23 +43,42 @@ class MyApp extends StatelessWidget {
           Theme.of(context).textTheme,
         ),
 
-        // 3. Styling Input Field (Modern & Clean)
+        // 3. Global Dialog Theme (Agar Alert Dialog Reset terlihat modern)
+        dialogTheme: DialogThemeData(
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          titleTextStyle: GoogleFonts.poppins(
+            fontSize: 20, 
+            fontWeight: FontWeight.bold, 
+            color: const Color(0xFF1E293B)
+          ),
+        ),
+
+        // 4. Cursor & Selection Color
+        textSelectionTheme: TextSelectionThemeData(
+          cursorColor: const Color(0xFF6366F1),
+          selectionColor: const Color(0xFF6366F1).withValues(alpha: 0.3),
+          selectionHandleColor: const Color(0xFF6366F1),
+        ),
+
+        // 5. Styling Input Field
         inputDecorationTheme: InputDecorationTheme(
           filled: true,
           fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 18),
+          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
           hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
           
           // Border saat tidak diklik
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: BorderSide(color: Colors.grey.shade200, width: 1.5),
+            borderSide: BorderSide(color: Colors.grey.shade300, width: 1),
           ),
           
           // Border saat diklik (Fokus)
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
-            borderSide: const BorderSide(color: Color(0xFF4F46E5), width: 2),
+            borderSide: const BorderSide(color: Color(0xFF6366F1), width: 2),
           ),
           
           // Border saat error
@@ -64,15 +86,19 @@ class MyApp extends StatelessWidget {
             borderRadius: BorderRadius.circular(16),
             borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
           ),
+          focusedErrorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(16),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+          ),
         ),
 
-        // 4. Styling Tombol (Elevated Button)
+        // 6. Styling Tombol (Elevated Button)
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
-            backgroundColor: const Color(0xFF4F46E5),
+            backgroundColor: const Color(0xFF6366F1),
             foregroundColor: Colors.white,
-            elevation: 3, // Sedikit bayangan
-            shadowColor: const Color(0xFF4F46E5).withAlpha(23),
+            elevation: 4,
+            shadowColor: const Color(0xFF6366F1).withValues(alpha: 0.4),
             padding: const EdgeInsets.symmetric(vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(14),
@@ -84,9 +110,9 @@ class MyApp extends StatelessWidget {
           ),
         ),
 
-        // 5. Styling App Bar
+        // 7. Styling App Bar
         appBarTheme: AppBarTheme(
-          backgroundColor: const Color(0xFFF8F9FD),
+          backgroundColor: const Color(0xFFF1F5F9),
           elevation: 0,
           centerTitle: true,
           scrolledUnderElevation: 0,
