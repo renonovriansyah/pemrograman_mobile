@@ -13,15 +13,78 @@ class HistoryScreen extends StatefulWidget {
 }
 
 class _HistoryScreenState extends State<HistoryScreen> {
-  // Label filter yang sedang aktif (untuk UI)
+  // Label filter yang sedang aktif
   String _activeFilterLabel = 'Semua';
-  // Range tanggal aktual untuk logic
+  // Label khusus untuk tombol bulan (Default: "Pilih Bulan")
+  String _monthButtonLabel = 'Pilih Bulan';
+  
+  // Range tanggal aktual
   DateTimeRange? _selectedDateRange;
 
-  // --- LOGIKA QUICK FILTER ---
-  void _setFilter(String label) async {
+  // --- FUNGSI BUKA POPUP BULAN (12 BULAN TERAKHIR) ---
+  void _showMonthPicker() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          height: 400, // Tinggi popup
+          child: Column(
+            children: [
+              const Text(
+                "Pilih Bulan",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF720E1E)),
+              ),
+              const SizedBox(height: 10),
+              const Divider(),
+              Expanded(
+                child: ListView.builder(
+                  itemCount: 13, // Tampilkan 12 bulan ke belakang + bulan ini
+                  itemBuilder: (context, index) {
+                    // Logic mundur bulan: 0 = bulan ini, 1 = bulan lalu, dst.
+                    final date = DateTime(DateTime.now().year, DateTime.now().month - index);
+                    final monthName = DateFormat('MMMM yyyy', 'id_ID').format(date); 
+                    // Note: Jika error locale 'id_ID', hapus parameter 'id_ID'
+
+                    return ListTile(
+                      title: Text(monthName, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w500)),
+                      onTap: () {
+                        // Set Range Tanggal: Awal Bulan s/d Akhir Bulan
+                        final start = DateTime(date.year, date.month, 1);
+                        final end = DateTime(date.year, date.month + 1, 0, 23, 59, 59);
+
+                        setState(() {
+                          _selectedDateRange = DateTimeRange(start: start, end: end);
+                          _activeFilterLabel = 'BulanCustom'; // Penanda internal
+                          _monthButtonLabel = monthName; // Ubah label tombol jadi nama bulan
+                        });
+                        
+                        Navigator.pop(context); // Tutup popup
+                      },
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // --- LOGIKA FILTER UMUM ---
+  void _setFilter(String label) {
     final now = DateTime.now();
     DateTimeRange? newRange;
+
+    // Reset label bulan jika pindah filter lain
+    if (label != 'BulanCustom') {
+      setState(() => _monthButtonLabel = 'Pilih Bulan');
+    }
 
     switch (label) {
       case 'Hari Ini':
@@ -34,39 +97,12 @@ class _HistoryScreenState extends State<HistoryScreen> {
       case '7 Hari':
         newRange = DateTimeRange(start: now.subtract(const Duration(days: 6)), end: now);
         break;
-      case 'Bulan Ini':
-        newRange = DateTimeRange(
-          start: DateTime(now.year, now.month, 1), 
-          end: DateTime(now.year, now.month + 1, 0) // Akhir bulan
-        );
-        break;
       case 'Semua':
         newRange = null;
         break;
-      case 'Custom':
-        // Buka Kalender Custom
-        final picked = await showDateRangePicker(
-          context: context,
-          firstDate: DateTime(2020),
-          lastDate: now,
-          initialDateRange: _selectedDateRange,
-          builder: (context, child) {
-            return Theme(
-              data: ThemeData.light().copyWith(
-                primaryColor: const Color(0xFF720E1E),
-                colorScheme: const ColorScheme.light(primary: Color(0xFF720E1E), onPrimary: Colors.white),
-                scaffoldBackgroundColor: Colors.white,
-              ),
-              child: child!,
-            );
-          },
-        );
-        if (picked != null) {
-          newRange = picked;
-        } else {
-          return; // Batal pilih
-        }
-        break;
+      case 'BulanCustom':
+        _showMonthPicker();
+        return; // Stop disini, jangan setState dulu
     }
 
     setState(() {
@@ -106,14 +142,13 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               final allDocs = snapshot.data!.docs;
 
-              // --- FILTER LOGIC ---
+              // --- LOGIKA PENYARINGAN DATA ---
               final filteredDocs = allDocs.where((doc) {
                 if (_selectedDateRange == null) return true;
 
                 final data = doc.data() as Map<String, dynamic>;
                 final timestamp = (data['timestamp'] as Timestamp).toDate();
                 
-                // Normalisasi jam agar akurat (Start 00:00:00 - End 23:59:59)
                 final start = DateTime(_selectedDateRange!.start.year, _selectedDateRange!.start.month, _selectedDateRange!.start.day);
                 final end = DateTime(_selectedDateRange!.end.year, _selectedDateRange!.end.month, _selectedDateRange!.end.day, 23, 59, 59);
 
@@ -121,7 +156,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                        timestamp.isBefore(end.add(const Duration(seconds: 1)));
               }).toList();
 
-              // --- HITUNG SUMMARY ---
+              // --- HITUNG TOTAL ---
               double totalRevenue = 0;
               for (var doc in filteredDocs) {
                 final data = doc.data() as Map<String, dynamic>;
@@ -130,7 +165,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               return Column(
                 children: [
-                  // --- HEADER: SUMMARY & QUICK FILTER ---
+                  // --- HEADER SUMMARY & FILTER ---
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -141,57 +176,56 @@ class _HistoryScreenState extends State<HistoryScreen> {
                       ]
                     ),
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // 1. FILTER CHIPS SCROLLABLE
+                        // 1. FILTER CHIPS
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
-                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
                           child: Row(
                             children: [
                               _buildFilterChip("Semua"),
                               _buildFilterChip("Hari Ini"),
                               _buildFilterChip("Kemarin"),
                               _buildFilterChip("7 Hari"),
-                              _buildFilterChip("Bulan Ini"),
-                              // Tombol Custom (Icon Kalender)
+                              
+                              // TOMBOL PILIH BULAN (POP UP)
                               Padding(
-                                padding: const EdgeInsets.only(left: 8.0),
-                                child: InkWell(
-                                  onTap: () => _setFilter('Custom'),
-                                  borderRadius: BorderRadius.circular(20),
-                                  child: Container(
-                                    padding: const EdgeInsets.all(8),
-                                    decoration: BoxDecoration(
-                                      color: _activeFilterLabel == 'Custom' ? const Color(0xFF720E1E) : Colors.grey[100],
-                                      shape: BoxShape.circle,
-                                      border: Border.all(color: _activeFilterLabel == 'Custom' ? const Color(0xFF720E1E) : Colors.grey[300]!)
-                                    ),
-                                    child: Icon(
-                                      Icons.calendar_month_rounded, 
-                                      size: 20,
-                                      color: _activeFilterLabel == 'Custom' ? Colors.white : Colors.grey[600]
-                                    ),
+                                padding: const EdgeInsets.only(right: 8.0),
+                                child: FilterChip(
+                                  label: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_month_rounded, 
+                                        size: 14, 
+                                        color: _activeFilterLabel == 'BulanCustom' ? Colors.white : Colors.grey[700]
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(_monthButtonLabel), // Label berubah dinamis
+                                    ],
                                   ),
+                                  selected: _activeFilterLabel == 'BulanCustom',
+                                  onSelected: (_) => _setFilter('BulanCustom'),
+                                  backgroundColor: Colors.white,
+                                  selectedColor: const Color(0xFF720E1E),
+                                  checkmarkColor: Colors.white,
+                                  showCheckmark: false,
+                                  labelStyle: TextStyle(
+                                    color: _activeFilterLabel == 'BulanCustom' ? Colors.white : Colors.grey[700],
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 12
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                    side: BorderSide(color: _activeFilterLabel == 'BulanCustom' ? Colors.transparent : Colors.grey[300]!)
+                                  ),
+                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 0),
                                 ),
                               ),
                             ],
                           ),
                         ),
 
-                        // 2. INFO TANGGAL TERPILIH (Jika Custom/Range)
-                        if (_selectedDateRange != null)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-                            child: Text(
-                              "${DateFormat('dd MMM').format(_selectedDateRange!.start)} - ${DateFormat('dd MMM yyyy').format(_selectedDateRange!.end)}",
-                              style: TextStyle(color: Colors.grey[600], fontSize: 12, fontWeight: FontWeight.bold),
-                            ),
-                          ),
-
-                        const SizedBox(height: 12),
-
-                        // 3. SUMMARY CARDS
+                        // 2. SUMMARY CARDS
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                           child: Row(
@@ -323,7 +357,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- WIDGET HELPER CHIP ---
+  // --- WIDGET HELPER ---
   Widget _buildFilterChip(String label) {
     final isSelected = _activeFilterLabel == label;
     return Padding(
@@ -337,9 +371,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
         backgroundColor: Colors.white,
         selectedColor: const Color(0xFF720E1E),
         checkmarkColor: Colors.white,
+        showCheckmark: false,
         labelStyle: TextStyle(
           color: isSelected ? Colors.white : Colors.grey[700],
-          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          fontWeight: FontWeight.w600,
           fontSize: 12
         ),
         shape: RoundedRectangleBorder(

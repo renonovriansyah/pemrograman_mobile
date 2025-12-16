@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart'; 
+import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/date_symbol_data_local.dart'; // <--- 1. TAMBAHKAN IMPORT INI
 import 'features/menu/menu_screen.dart';
-// Note: Import menu_seeder & firestore_service dihapus karena tugasnya sudah selesai.
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,7 +21,9 @@ void main() async {
     ),
   );
 
-  // Bagian Seeder sudah dihapus agar aplikasi langsung berjalan normal.
+  // --- 2. INISIALISASI FORMAT TANGGAL INDONESIA ---
+  // Wajib dipanggil sebelum aplikasi jalan agar DateFormat('...','id_ID') tidak error
+  await initializeDateFormatting('id_ID', null); 
 
   runApp(
     const ProviderScope(
