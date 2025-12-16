@@ -64,11 +64,12 @@ class MenuScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF720E1E),
         elevation: 0,
         actions: [
-          _ActionButton(
-            icon: Icons.history_edu_outlined,
-            label: "Riwayat",
-            onTap: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
+            icon: const Icon(Icons.history_rounded, color: Colors.white, size: 28),
+            tooltip: "Riwayat Transaksi",
           ),
+          
           const SizedBox(width: 8),
           
           Padding(
