@@ -10,7 +10,6 @@ import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../history/history_screen.dart';
 
-// UBAH JADI STATEFUL WIDGET AGAR BISA SIMPAN STATE KATEGORI
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
 
@@ -22,13 +21,13 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   // 1. Variable State untuk Kategori Terpilih
   String selectedCategory = 'Semua Menu';
 
-  // 2. Daftar Kategori (Sudah ditambah Dessert)
+  // 2. Daftar Kategori (Urutan ini akan digunakan untuk sorting "Semua Menu")
   final List<String> categories = [
     'Semua Menu',
     'Burger Premium',
     'Minuman',
     'Sides',
-    'Dessert', // <-- Filter Baru
+    'Dessert', 
   ];
 
   @override
@@ -87,9 +86,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             icon: const Icon(Icons.history_rounded, color: Colors.white, size: 28),
             tooltip: "Riwayat Transaksi",
           ),
-          
           const SizedBox(width: 8),
-          
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Stack(
@@ -181,7 +178,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     // Kategori Chips (ListView Horizontal)
                     SizedBox(
                       height: 40,
-                      child: ListView.builder( // Pakai Builder agar dinamis
+                      child: ListView.builder( 
                         scrollDirection: Axis.horizontal,
                         itemCount: categories.length,
                         itemBuilder: (context, index) {
@@ -203,33 +200,54 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 ),
               ),
 
-              // 2. GRID PRODUK DENGAN FILTER
+              // 2. GRID PRODUK DENGAN FILTER & SORTING
               Expanded(
                 child: StreamBuilder<List<Product>>(
                   stream: FirestoreService().getProducts(),
                   builder: (context, snapshot) {
-                    // Cek Loading
                     if (snapshot.connectionState == ConnectionState.waiting) {
                       return const Center(child: CircularProgressIndicator(color: Color(0xFF720E1E)));
                     }
-                    // Cek Error
                     if (snapshot.hasError) {
                       return Center(child: Text("Error: ${snapshot.error}"));
                     }
-                    // Cek Kosong
                     if (!snapshot.hasData || snapshot.data!.isEmpty) {
                       return _buildEmptyState();
                     }
 
                     final allProducts = snapshot.data!;
                     
-                    // --- LOGIKA FILTER ---
-                    final filteredProducts = allProducts.where((product) {
+                    // A. FILTERING
+                    var filteredProducts = allProducts.where((product) {
                       if (selectedCategory == 'Semua Menu') return true;
-                      // Bandingkan string (case insensitive)
-                      // Contoh: 'Burger Premium' (UI) == 'burger premium' (DB)
                       return product.category.toLowerCase() == selectedCategory.toLowerCase();
                     }).toList();
+
+                    // B. SORTING (LOGIKA BARU DI SINI)
+                    filteredProducts.sort((a, b) {
+                      if (selectedCategory == 'Semua Menu') {
+                        // 1. Jika "Semua Menu", urutkan berdasarkan Kategori dulu
+                        // Kita cari index kategori produk di dalam list 'categories' class kita
+                        // Agar urutannya: Burger -> Minuman -> Sides -> Dessert
+                        int indexA = categories.indexWhere((c) => c.toLowerCase() == a.category.toLowerCase());
+                        int indexB = categories.indexWhere((c) => c.toLowerCase() == b.category.toLowerCase());
+
+                        // Jika kategori tidak ketemu di list (misal salah ketik di DB), lempar ke belakang
+                        if (indexA == -1) indexA = 999;
+                        if (indexB == -1) indexB = 999;
+
+                        int categoryCompare = indexA.compareTo(indexB);
+
+                        // Jika kategorinya sama, baru urutkan Nama A-Z
+                        if (categoryCompare == 0) {
+                          return a.name.compareTo(b.name);
+                        }
+                        return categoryCompare;
+                      } else {
+                        // 2. Jika Filter Kategori tertentu (misal Minuman), langsung urutkan Nama A-Z
+                        return a.name.compareTo(b.name);
+                      }
+                    });
 
                     if (filteredProducts.isEmpty) {
                       return Center(
@@ -252,7 +270,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                       itemBuilder: (context, index) {
                         final product = filteredProducts[index];
                         return FadeInUp(
-                          delay: Duration(milliseconds: index * 50),
+                          delay: Duration(milliseconds: (index * 50).clamp(0, 500)), // Clamp biar gak kelamaan kalau item banyak
                           child: _ProductCardModern(product: product, currency: currency),
                         );
                       },
@@ -280,7 +298,6 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     );
   }
 
-  // Chip Kategori yang bisa diklik
   Widget _buildCategoryChip({required String label, required bool isSelected, required VoidCallback onTap}) {
     return Padding(
       padding: const EdgeInsets.only(right: 10.0),
