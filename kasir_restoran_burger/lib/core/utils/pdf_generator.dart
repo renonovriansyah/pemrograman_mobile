@@ -1,6 +1,6 @@
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
+import 'package:printing/printing.dart'; // Untuk imageFromAssetBundle
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
@@ -16,12 +16,16 @@ class PdfGenerator {
       final now = DateTime.now();
       final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(now);
 
+      // --- LOAD LOGO DARI ASSETS ---
+      // Pastikan file 'assets/logo.png' sudah ada dan terdaftar di pubspec.yaml
+      final logoImage = await imageFromAssetBundle('assets/logo.png');
+
       doc.addPage(
         pw.Page(
           pageFormat: PdfPageFormat.roll80,
           build: (pw.Context context) {
             return _buildReceiptLayout(
-              title: 'SIZZLE BURGER',
+              logo: logoImage, // Kirim Logo ke Layout
               subtitle: 'Jln. Rasa Juara No. 1',
               dateStr: dateStr,
               transactionId: '-',
@@ -48,27 +52,27 @@ class PdfGenerator {
       );
     } catch (e) {
       debugPrint("ERROR PRINT RECEIPT: $e");
-      rethrow;
     }
   }
 
   // --- 2. CETAK ULANG DARI HISTORY (Reprint) ---
   static Future<void> reprint(Map<String, dynamic> transactionData, String transactionId) async {
-    // KITA HAPUS TRY-CATCH AGAR ERROR MUNCUL DI LAYAR HP/BROWSER
+    // KITA HAPUS TRY-CATCH AGAR ERROR MUNCUL DI LAYAR JIKA ADA MASALAH
     final doc = pw.Document();
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     
-    // 1. Debugging Data (Cek di Console Browser F12)
+    // 1. Debugging Data
     debugPrint("Mulai Reprint ID: $transactionId");
-    debugPrint("Raw Data: $transactionData");
 
-    // 2. Safe Parsing Timestamp
+    // 2. Load Logo
+    final logoImage = await imageFromAssetBundle('assets/logo.png');
+
+    // 3. Safe Parsing Timestamp
     DateTime timestamp;
     if (transactionData['timestamp'] != null) {
       if (transactionData['timestamp'] is Timestamp) {
         timestamp = (transactionData['timestamp'] as Timestamp).toDate();
       } else if (transactionData['timestamp'] is String) {
-        // Jaga-jaga kalau formatnya string ISO8601
         timestamp = DateTime.parse(transactionData['timestamp']); 
       } else {
         timestamp = DateTime.now();
@@ -78,11 +82,11 @@ class PdfGenerator {
     }
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(timestamp);
 
-    // 3. Safe Parsing Angka
+    // 4. Safe Parsing Angka
     final total = (transactionData['totalAmount'] as num? ?? 0).toDouble();
     final paymentMethod = transactionData['paymentMethod']?.toString() ?? '-';
 
-    // 4. Parsing Items
+    // 5. Parsing Items
     final rawItems = transactionData['items'] as List<dynamic>? ?? [];
 
     doc.addPage(
@@ -90,7 +94,7 @@ class PdfGenerator {
         pageFormat: PdfPageFormat.roll80,
         build: (pw.Context context) {
           return _buildReceiptLayout(
-            title: 'SIZZLE BURGER',
+            logo: logoImage, // Kirim Logo
             subtitle: '(COPY STRUK)',
             dateStr: dateStr,
             transactionId: transactionId.length > 8 ? transactionId.substring(0, 8).toUpperCase() : transactionId,
@@ -124,9 +128,9 @@ class PdfGenerator {
     );
   }
   
-  // --- LAYOUT (Sama seperti sebelumnya) ---
+  // --- LAYOUT UMUM DENGAN LOGO ---
   static pw.Widget _buildReceiptLayout({
-    required String title,
+    required pw.ImageProvider logo, // Parameter Wajib Logo
     required String subtitle,
     required String dateStr,
     required String transactionId,
@@ -138,9 +142,17 @@ class PdfGenerator {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.center,
       children: [
-        pw.Text(title, style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 18)),
+        // --- HEADER LOGO ---
+        pw.Container(
+          height: 60,
+          width: 60,
+          child: pw.Image(logo),
+        ),
+        pw.SizedBox(height: 5),
+        pw.Text('SIZZLE BURGER', style: pw.TextStyle(fontWeight: pw.FontWeight.bold, fontSize: 14)),
         pw.Text(subtitle, style: const pw.TextStyle(fontSize: 10)),
         if (transactionId != '-') pw.Text('ID: $transactionId', style: const pw.TextStyle(fontSize: 10)),
+        
         pw.SizedBox(height: 10),
         pw.Divider(thickness: 0.5),
         
@@ -171,6 +183,7 @@ class PdfGenerator {
         ),
         pw.SizedBox(height: 20),
         pw.Text('Terima Kasih!', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
+        pw.Text('Follow IG: @sizzleburger', style: const pw.TextStyle(fontSize: 8)),
       ],
     );
   }
@@ -216,29 +229,21 @@ class PdfGenerator {
 
   static String _formatVariantsHistory(Map<String, dynamic> item) {
     List<String> details = [];
-    
-    // Gunakan try-catch kecil agar satu item error tidak merusak semua
     try {
-      // Variants
       if (item['variants'] != null && item['variants'] is Map) {
         final variants = item['variants'] as Map;
         variants.forEach((k, v) => details.add(v.toString()));
       }
-      
-      // Modifiers
       if (item['modifiers'] != null && item['modifiers'] is List) {
         final modifiers = item['modifiers'] as List;
         details.addAll(modifiers.map((e) => e.toString()));
       }
-      
-      // Note
       if (item['note'] != null && item['note'].toString().isNotEmpty) {
         details.add("Note: ${item['note']}");
       }
     } catch (e) {
-      // Ignore parsing error for detail string
+      // Ignore parsing error
     }
-    
     return details.join(", ");
   }
 }

@@ -20,10 +20,13 @@ class TransactionDetailScreen extends StatelessWidget {
     final total = (data['totalAmount'] ?? 0).toDouble();
     final items = List<Map<String, dynamic>>.from(data['items'] ?? []);
     
-    // Format Tanggal
     DateTime date;
     if (data['timestamp'] != null) {
-      date = (data['timestamp'] as Timestamp).toDate();
+      if (data['timestamp'] is Timestamp) {
+        date = (data['timestamp'] as Timestamp).toDate();
+      } else {
+        date = DateTime.now();
+      }
     } else {
       date = DateTime.now();
     }
@@ -36,7 +39,6 @@ class TransactionDetailScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // KARTU INFO UTAMA
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -46,7 +48,7 @@ class TransactionDetailScreen extends StatelessWidget {
               ),
               child: Column(
                 children: [
-                  _rowInfo("ID Transaksi", documentId.substring(0, 8).toUpperCase()),
+                  _rowInfo("ID Transaksi", documentId.length > 8 ? documentId.substring(0, 8).toUpperCase() : documentId),
                   const Divider(),
                   _rowInfo("Waktu", dateStr),
                   const Divider(),
@@ -61,13 +63,11 @@ class TransactionDetailScreen extends StatelessWidget {
             const Text("Daftar Pesanan", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
             const SizedBox(height: 12),
 
-            // LIST ITEM
             ...items.map((item) {
               final subTotal = (item['totalPrice'] ?? 0).toDouble();
               final variants = item['variants'] as Map<String, dynamic>? ?? {};
               final modifiers = List<String>.from(item['modifiers'] ?? []);
               
-              // Gabung text detail
               List<String> details = [];
               variants.forEach((k, v) => details.add(v));
               details.addAll(modifiers);
@@ -112,8 +112,6 @@ class TransactionDetailScreen extends StatelessWidget {
             }),
 
             const SizedBox(height: 20),
-            
-            // TOTAL BESAR
             Align(
               alignment: Alignment.centerRight,
               child: Text(
@@ -125,11 +123,9 @@ class TransactionDetailScreen extends StatelessWidget {
         ),
       ),
       
-      // TOMBOL CETAK ULANG (FAB)
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () async {
           try {
-            // Tampilkan loading kecil
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text("Menyiapkan PDF..."), duration: Duration(milliseconds: 500)),
             );
@@ -137,13 +133,14 @@ class TransactionDetailScreen extends StatelessWidget {
             await PdfGenerator.reprint(data, documentId);
             
           } catch (e) {
-            // TANGKAP ERROR DAN TAMPILKAN DI LAYAR
-            print("ERROR UI: $e"); // Cek Console F12
+            debugPrint("ERROR UI: $e"); // Pakai debugPrint, bukan print
+            
+            if (!context.mounted) return; // Cek mounted sebelum showDialog
+
             showDialog(
               context: context,
               builder: (context) => AlertDialog(
                 title: const Text("Gagal Cetak"),
-                // Tampilkan pesan error spesifik
                 content: Text(e.toString()), 
                 actions: [
                   TextButton(onPressed: () => Navigator.pop(context), child: const Text("Tutup"))
