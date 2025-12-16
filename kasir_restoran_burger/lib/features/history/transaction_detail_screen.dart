@@ -22,6 +22,8 @@ class TransactionDetailScreen extends StatelessWidget {
     final total = (data['totalAmount'] ?? 0).toDouble();
     final items = List<Map<String, dynamic>>.from(data['items'] ?? []);
     final method = data['paymentMethod'] ?? '-';
+    // AMBIL NAMA PELANGGAN (Default 'Umum' jika tidak ada di data lama)
+    final customerName = data['customerName'] ?? 'Umum';
     
     DateTime date;
     if (data['timestamp'] != null && data['timestamp'] is Timestamp) {
@@ -30,8 +32,6 @@ class TransactionDetailScreen extends StatelessWidget {
       date = DateTime.now();
     }
     final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(date);
-    
-    // final idShort = documentId.length > 8 ? documentId.substring(0, 8).toUpperCase() : documentId;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
@@ -87,7 +87,17 @@ class TransactionDetailScreen extends StatelessWidget {
                             _buildDashedLine(),
                             const SizedBox(height: 16),
                             
-                            // Info Tanggal & Kasir
+                            // Info Pelanggan (BARU)
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Pelanggan", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                Text(customerName, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+
+                            // Info Tanggal
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -96,6 +106,8 @@ class TransactionDetailScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 4),
+
+                            // Info Kasir
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -104,6 +116,8 @@ class TransactionDetailScreen extends StatelessWidget {
                               ],
                             ),
                             const SizedBox(height: 4),
+
+                            // Info Metode Pembayaran
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -130,7 +144,7 @@ class TransactionDetailScreen extends StatelessWidget {
                             _buildDashedLine(),
                             const SizedBox(height: 16),
 
-                            // --- BAGIAN TOTAL (Disamakan dengan Checkout) ---
+                            // --- BAGIAN TOTAL ---
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
@@ -220,7 +234,7 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- STYLE ITEM ROW (DISAMAKAN DENGAN CHECKOUT) ---
+  // --- STYLE ITEM ROW ---
   Widget _buildItemRow(Map<String, dynamic> item, NumberFormat currency) {
     final subTotal = (item['totalPrice'] ?? 0).toDouble();
     final variants = item['variants'] as Map<String, dynamic>? ?? {};
@@ -230,7 +244,7 @@ class TransactionDetailScreen extends StatelessWidget {
     variants.forEach((k, v) => details.add(v));
     details.addAll(modifiers);
     if (item['note'] != null && item['note'].isNotEmpty) {
-      details.add("(${item['note']})"); // Note dalam kurung agar rapi
+      details.add("(${item['note']})");
     }
 
     return Padding(
@@ -238,7 +252,7 @@ class TransactionDetailScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Kotak Kuantitas (Disamakan dengan Checkout)
+          // Kotak Kuantitas
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
             decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(4)),
@@ -272,7 +286,7 @@ class TransactionDetailScreen extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final boxWidth = constraints.constrainWidth();
-        const dashWidth = 6.0; // Disamakan lebar dash
+        const dashWidth = 6.0;
         final dashCount = (boxWidth / (2 * dashWidth)).floor();
         return Flex(
           direction: Axis.horizontal,

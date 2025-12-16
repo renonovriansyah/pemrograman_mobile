@@ -15,13 +15,23 @@ class HistoryScreen extends StatefulWidget {
 class _HistoryScreenState extends State<HistoryScreen> {
   // Label filter yang sedang aktif
   String _activeFilterLabel = 'Semua';
-  // Label khusus untuk tombol bulan (Default: "Pilih Bulan")
+  // Label khusus untuk tombol bulan
   String _monthButtonLabel = 'Pilih Bulan';
   
   // Range tanggal aktual
   DateTimeRange? _selectedDateRange;
 
-  // --- FUNGSI BUKA POPUP BULAN (12 BULAN TERAKHIR) ---
+  // --- 1. TAMBAHAN VARIABEL SEARCH ---
+  String _searchQuery = '';
+  final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // --- FUNGSI POPUP BULAN ---
   void _showMonthPicker() {
     showModalBottomSheet(
       context: context,
@@ -32,7 +42,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       builder: (context) {
         return Container(
           padding: const EdgeInsets.symmetric(vertical: 20),
-          height: 400, // Tinggi popup
+          height: 400,
           child: Column(
             children: [
               const Text(
@@ -43,27 +53,25 @@ class _HistoryScreenState extends State<HistoryScreen> {
               const Divider(),
               Expanded(
                 child: ListView.builder(
-                  itemCount: 13, // Tampilkan 12 bulan ke belakang + bulan ini
+                  itemCount: 13,
                   itemBuilder: (context, index) {
-                    // Logic mundur bulan: 0 = bulan ini, 1 = bulan lalu, dst.
                     final date = DateTime(DateTime.now().year, DateTime.now().month - index);
-                    final monthName = DateFormat('MMMM yyyy', 'id_ID').format(date); 
-                    // Note: Jika error locale 'id_ID', hapus parameter 'id_ID'
+                    // Gunakan locale 'id_ID' jika sudah diinit di main.dart, jika belum hapus parameternya
+                    final monthName = DateFormat('MMMM yyyy', 'id_ID').format(date);
 
                     return ListTile(
                       title: Text(monthName, textAlign: TextAlign.center, style: const TextStyle(fontWeight: FontWeight.w500)),
                       onTap: () {
-                        // Set Range Tanggal: Awal Bulan s/d Akhir Bulan
                         final start = DateTime(date.year, date.month, 1);
                         final end = DateTime(date.year, date.month + 1, 0, 23, 59, 59);
 
                         setState(() {
                           _selectedDateRange = DateTimeRange(start: start, end: end);
-                          _activeFilterLabel = 'BulanCustom'; // Penanda internal
-                          _monthButtonLabel = monthName; // Ubah label tombol jadi nama bulan
+                          _activeFilterLabel = 'BulanCustom';
+                          _monthButtonLabel = monthName;
                         });
                         
-                        Navigator.pop(context); // Tutup popup
+                        Navigator.pop(context);
                       },
                     );
                   },
@@ -76,12 +84,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
     );
   }
 
-  // --- LOGIKA FILTER UMUM ---
+  // --- LOGIKA FILTER CHIPS ---
   void _setFilter(String label) {
     final now = DateTime.now();
     DateTimeRange? newRange;
 
-    // Reset label bulan jika pindah filter lain
     if (label != 'BulanCustom') {
       setState(() => _monthButtonLabel = 'Pilih Bulan');
     }
@@ -102,7 +109,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
         break;
       case 'BulanCustom':
         _showMonthPicker();
-        return; // Stop disini, jangan setState dulu
+        return;
     }
 
     setState(() {
@@ -142,18 +149,32 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               final allDocs = snapshot.data!.docs;
 
-              // --- LOGIKA PENYARINGAN DATA ---
+              // --- 2. LOGIKA FILTER (TANGGAL + NAMA) ---
               final filteredDocs = allDocs.where((doc) {
-                if (_selectedDateRange == null) return true;
-
                 final data = doc.data() as Map<String, dynamic>;
-                final timestamp = (data['timestamp'] as Timestamp).toDate();
                 
-                final start = DateTime(_selectedDateRange!.start.year, _selectedDateRange!.start.month, _selectedDateRange!.start.day);
-                final end = DateTime(_selectedDateRange!.end.year, _selectedDateRange!.end.month, _selectedDateRange!.end.day, 23, 59, 59);
+                // A. Cek Tanggal
+                bool dateMatch = true;
+                if (_selectedDateRange != null) {
+                  final timestamp = (data['timestamp'] as Timestamp).toDate();
+                  final start = DateTime(_selectedDateRange!.start.year, _selectedDateRange!.start.month, _selectedDateRange!.start.day);
+                  final end = DateTime(_selectedDateRange!.end.year, _selectedDateRange!.end.month, _selectedDateRange!.end.day, 23, 59, 59);
+                  
+                  dateMatch = timestamp.isAfter(start.subtract(const Duration(seconds: 1))) && 
+                              timestamp.isBefore(end.add(const Duration(seconds: 1)));
+                }
 
-                return timestamp.isAfter(start.subtract(const Duration(seconds: 1))) && 
-                       timestamp.isBefore(end.add(const Duration(seconds: 1)));
+                // B. Cek Pencarian Nama/ID
+                bool searchMatch = true;
+                if (_searchQuery.isNotEmpty) {
+                  final query = _searchQuery.toLowerCase();
+                  final customerName = (data['customerName'] ?? '').toString().toLowerCase();
+                  final id = doc.id.toLowerCase();
+                  
+                  searchMatch = customerName.contains(query) || id.contains(query);
+                }
+
+                return dateMatch && searchMatch;
               }).toList();
 
               // --- HITUNG TOTAL ---
@@ -165,7 +186,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
 
               return Column(
                 children: [
-                  // --- HEADER SUMMARY & FILTER ---
+                  // --- HEADER (SEARCH + FILTER + SUMMARY) ---
                   Container(
                     width: double.infinity,
                     decoration: BoxDecoration(
@@ -177,7 +198,48 @@ class _HistoryScreenState extends State<HistoryScreen> {
                     ),
                     child: Column(
                       children: [
-                        // 1. FILTER CHIPS
+                        // A. SEARCH BAR (BARU)
+                        Padding(
+                          padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
+                          child: TextField(
+                            controller: _searchController,
+                            onChanged: (value) {
+                              setState(() {
+                                _searchQuery = value;
+                              });
+                            },
+                            decoration: InputDecoration(
+                              hintText: "Cari Nama Pelanggan...",
+                              prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                              suffixIcon: _searchQuery.isNotEmpty 
+                                ? IconButton(
+                                    icon: const Icon(Icons.clear, color: Colors.grey),
+                                    onPressed: () {
+                                      _searchController.clear();
+                                      setState(() => _searchQuery = '');
+                                    },
+                                  )
+                                : null,
+                              filled: true,
+                              fillColor: Colors.grey[100],
+                              contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF720E1E), width: 1),
+                              ),
+                            ),
+                          ),
+                        ),
+
+                        // B. FILTER CHIPS
                         SingleChildScrollView(
                           scrollDirection: Axis.horizontal,
                           padding: const EdgeInsets.fromLTRB(20, 16, 20, 12),
@@ -188,7 +250,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                               _buildFilterChip("Kemarin"),
                               _buildFilterChip("7 Hari"),
                               
-                              // TOMBOL PILIH BULAN (POP UP)
+                              // TOMBOL PILIH BULAN
                               Padding(
                                 padding: const EdgeInsets.only(right: 8.0),
                                 child: FilterChip(
@@ -200,7 +262,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                         color: _activeFilterLabel == 'BulanCustom' ? Colors.white : Colors.grey[700]
                                       ),
                                       const SizedBox(width: 6),
-                                      Text(_monthButtonLabel), // Label berubah dinamis
+                                      Text(_monthButtonLabel),
                                     ],
                                   ),
                                   selected: _activeFilterLabel == 'BulanCustom',
@@ -225,7 +287,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           ),
                         ),
 
-                        // 2. SUMMARY CARDS
+                        // C. SUMMARY CARDS
                         Padding(
                           padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
                           child: Row(
@@ -263,9 +325,18 @@ class _HistoryScreenState extends State<HistoryScreen> {
                           child: Column(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
-                              Icon(Icons.event_busy_rounded, size: 60, color: Colors.grey[300]),
+                              Icon(
+                                _searchQuery.isNotEmpty ? Icons.search_off_rounded : Icons.event_busy_rounded, 
+                                size: 60, 
+                                color: Colors.grey[300]
+                              ),
                               const SizedBox(height: 12),
-                              Text("Tidak ada data transaksi", style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold)),
+                              Text(
+                                _searchQuery.isNotEmpty 
+                                  ? "Tidak ditemukan: \"$_searchQuery\""
+                                  : "Tidak ada data transaksi",
+                                style: TextStyle(color: Colors.grey[500], fontWeight: FontWeight.bold)
+                              ),
                             ],
                           ),
                         )
@@ -280,7 +351,9 @@ class _HistoryScreenState extends State<HistoryScreen> {
                             final method = data['paymentMethod'] ?? '-';
                             DateTime date = (data['timestamp'] as Timestamp).toDate();
                             final dateStr = DateFormat('dd MMM, HH:mm').format(date);
-                            final idShort = doc.id.substring(0, 8).toUpperCase();
+                            
+                            // 3. AMBIL NAMA PELANGGAN (Default 'Pelanggan')
+                            final customerName = data['customerName'] ?? 'Pelanggan';
 
                             return FadeInUp(
                               duration: const Duration(milliseconds: 300),
@@ -308,6 +381,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                   ),
                                   child: Row(
                                     children: [
+                                      // Ganti ikon struk dengan ikon user jika ada nama
                                       Container(
                                         height: 45, width: 45,
                                         decoration: BoxDecoration(
@@ -315,14 +389,20 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                           borderRadius: BorderRadius.circular(12),
                                           border: Border.all(color: Colors.grey[200]!)
                                         ),
-                                        child: const Icon(Icons.receipt_long_rounded, color: Color(0xFF720E1E), size: 22),
+                                        child: const Icon(Icons.person_rounded, color: Color(0xFF720E1E), size: 24),
                                       ),
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
                                           crossAxisAlignment: CrossAxisAlignment.start,
                                           children: [
-                                            Text("#$idShort", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                                            // TAMPILKAN NAMA PELANGGAN
+                                            Text(
+                                              customerName, 
+                                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                                              maxLines: 1,
+                                              overflow: TextOverflow.ellipsis,
+                                            ),
                                             const SizedBox(height: 2),
                                             Text(dateStr, style: TextStyle(color: Colors.grey[600], fontSize: 11)),
                                           ],
@@ -331,7 +411,10 @@ class _HistoryScreenState extends State<HistoryScreen> {
                                       Column(
                                         crossAxisAlignment: CrossAxisAlignment.end,
                                         children: [
-                                          Text(currency.format(total), style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF720E1E), fontSize: 14)),
+                                          Text(
+                                            currency.format(total), 
+                                            style: const TextStyle(fontWeight: FontWeight.w900, color: Color(0xFF720E1E), fontSize: 14)
+                                          ),
                                           const SizedBox(height: 4),
                                           Container(
                                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

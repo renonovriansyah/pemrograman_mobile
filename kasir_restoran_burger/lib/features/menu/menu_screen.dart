@@ -625,7 +625,7 @@ class _ProductDetailSheetState extends ConsumerState<ProductDetailSheet> {
                     TextField(
                       controller: notesController, 
                       decoration: InputDecoration(
-                        hintText: "Contoh: Jangan pakai bawang...",
+                        hintText: "Contoh: Tingkat Kematangan Welldone...",
                         filled: true,
                         fillColor: Colors.grey[100],
                         border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),

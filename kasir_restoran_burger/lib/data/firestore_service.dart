@@ -1,5 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart'; // Import ini untuk debugPrint
+import 'package:flutter/foundation.dart'; 
 import 'models/product_model.dart';
 
 class FirestoreService {
@@ -19,10 +19,11 @@ class FirestoreService {
   }
 
   // 2. Seed Data Awal
+  // (Fungsi ini jarang dipanggil lagi karena kita pakai MenuSeeder, tapi dibiarkan saja)
   Future<void> seedInitialData() async {
     final snapshot = await _productsRef.limit(1).get();
     if (snapshot.docs.isEmpty) {
-      debugPrint("Firestore Kosong. Seeding data..."); // Ganti print jadi debugPrint
+      debugPrint("Firestore Kosong. Seeding data...");
       
       final List<Product> initialMenu = [
         Product(
@@ -59,11 +60,12 @@ class FirestoreService {
     }
   }
 
-  // 3. Simpan Transaksi
+  // 3. Simpan Transaksi (DIPERBARUI)
   Future<void> saveOrder({
     required double totalAmount,
     required String paymentMethod,
     required List<Map<String, dynamic>> items,
+    required String customerName, // <--- TAMBAHAN: Wajib menerima nama pelanggan
     String cashierName = 'Admin',
   }) async {
     try {
@@ -71,12 +73,13 @@ class FirestoreService {
         'totalAmount': totalAmount,
         'paymentMethod': paymentMethod,
         'cashierName': cashierName,
+        'customerName': customerName, // <--- TAMBAHAN: Simpan field ini ke Firestore
         'timestamp': FieldValue.serverTimestamp(),
         'items': items,
       });
-      debugPrint("Transaksi Berhasil Disimpan ke Cloud!"); // Ganti print jadi debugPrint
+      debugPrint("Transaksi Berhasil Disimpan ke Cloud!");
     } catch (e) {
-      debugPrint("Gagal menyimpan transaksi: $e"); // Ganti print jadi debugPrint
+      debugPrint("Gagal menyimpan transaksi: $e");
       rethrow;
     }
   }
