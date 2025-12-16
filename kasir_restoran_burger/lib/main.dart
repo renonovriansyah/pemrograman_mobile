@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart'; // Import Google Fonts
-import 'data/firestore_service.dart'; 
+import 'package:google_fonts/google_fonts.dart'; 
 import 'features/menu/menu_screen.dart';
+// Note: Import menu_seeder & firestore_service dihapus karena tugasnya sudah selesai.
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,8 +21,7 @@ void main() async {
     ),
   );
 
-  // Cek & Isi Data awal jika kosong
-  await FirestoreService().seedInitialData();
+  // Bagian Seeder sudah dihapus agar aplikasi langsung berjalan normal.
 
   runApp(
     const ProviderScope(
@@ -37,25 +36,25 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Sizzle Burger POS',
+      title: 'Sizzle Burger',
       debugShowCheckedModeBanner: false,
       
       // --- TEMA GLOBAL APLIKASI ---
       theme: ThemeData(
-        // 1. Set Font Global ke 'Poppins' agar terlihat profesional & rapi
+        // 1. Set Font Global ke 'Poppins'
         textTheme: GoogleFonts.poppinsTextTheme(
           Theme.of(context).textTheme,
         ),
         
-        // 2. Warna Utama (Maroon Sizzle Burger)
+        // 2. Warna Utama
         primaryColor: const Color(0xFF720E1E),
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF720E1E),
           primary: const Color(0xFF720E1E),
-          secondary: const Color(0xFFFFCD05), // Kuning Aksen
+          secondary: const Color(0xFFFFCD05),
         ),
         
-        // 3. Style Default AppBar
+        // 3. Style AppBar
         appBarTheme: AppBarTheme(
           backgroundColor: const Color(0xFF720E1E),
           foregroundColor: Colors.white,
@@ -69,7 +68,7 @@ class MyApp extends StatelessWidget {
           iconTheme: const IconThemeData(color: Colors.white),
         ),
 
-        // 4. Background Scaffold Default
+        // 4. Background Scaffold
         scaffoldBackgroundColor: const Color(0xFFF8F9FA),
         
         useMaterial3: true,

@@ -10,11 +10,29 @@ import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../history/history_screen.dart';
 
-class MenuScreen extends ConsumerWidget {
+// UBAH JADI STATEFUL WIDGET AGAR BISA SIMPAN STATE KATEGORI
+class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MenuScreen> createState() => _MenuScreenState();
+}
+
+class _MenuScreenState extends ConsumerState<MenuScreen> {
+  // 1. Variable State untuk Kategori Terpilih
+  String selectedCategory = 'Semua Menu';
+
+  // 2. Daftar Kategori (Sudah ditambah Dessert)
+  final List<String> categories = [
+    'Semua Menu',
+    'Burger Premium',
+    'Minuman',
+    'Sides',
+    'Dessert', // <-- Filter Baru
+  ];
+
+  @override
+  Widget build(BuildContext context) {
     final currency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
     final cartItems = ref.watch(cartProvider); 
     final totalItems = cartItems.fold(0, (sum, item) => sum + item.quantity);
@@ -112,11 +130,12 @@ class MenuScreen extends ConsumerWidget {
         child: SafeArea(
           child: Column(
             children: [
-              // 1. BANNER PROMO
+              // 1. BANNER PROMO & KATEGORI
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                 child: Column(
                   children: [
+                    // Banner
                     Container(
                       width: double.infinity,
                       height: 130,
@@ -159,32 +178,67 @@ class MenuScreen extends ConsumerWidget {
                     
                     const SizedBox(height: 16),
                     
-                    // Kategori Chips
+                    // Kategori Chips (ListView Horizontal)
                     SizedBox(
                       height: 40,
-                      child: ListView(
+                      child: ListView.builder( // Pakai Builder agar dinamis
                         scrollDirection: Axis.horizontal,
-                        children: [
-                          _buildCategoryChip('Semua Menu', true),
-                          _buildCategoryChip('Burger Premium', false),
-                          _buildCategoryChip('Minuman', false),
-                          _buildCategoryChip('Sides', false),
-                        ],
+                        itemCount: categories.length,
+                        itemBuilder: (context, index) {
+                          final category = categories[index];
+                          final isSelected = selectedCategory == category;
+                          return _buildCategoryChip(
+                            label: category, 
+                            isSelected: isSelected,
+                            onTap: () {
+                              setState(() {
+                                selectedCategory = category;
+                              });
+                            }
+                          );
+                        },
                       ),
                     ),
                   ],
                 ),
               ),
 
-              // 2. GRID PRODUK
+              // 2. GRID PRODUK DENGAN FILTER
               Expanded(
                 child: StreamBuilder<List<Product>>(
                   stream: FirestoreService().getProducts(),
                   builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator(color: Color(0xFF720E1E)));
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) return _buildEmptyState();
+                    // Cek Loading
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator(color: Color(0xFF720E1E)));
+                    }
+                    // Cek Error
+                    if (snapshot.hasError) {
+                      return Center(child: Text("Error: ${snapshot.error}"));
+                    }
+                    // Cek Kosong
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return _buildEmptyState();
+                    }
 
-                    final products = snapshot.data!;
+                    final allProducts = snapshot.data!;
+                    
+                    // --- LOGIKA FILTER ---
+                    final filteredProducts = allProducts.where((product) {
+                      if (selectedCategory == 'Semua Menu') return true;
+                      // Bandingkan string (case insensitive)
+                      // Contoh: 'Burger Premium' (UI) == 'burger premium' (DB)
+                      return product.category.toLowerCase() == selectedCategory.toLowerCase();
+                    }).toList();
+
+                    if (filteredProducts.isEmpty) {
+                      return Center(
+                        child: Text(
+                          "Belum ada menu di kategori $selectedCategory",
+                          style: TextStyle(color: Colors.grey[500]),
+                        ),
+                      );
+                    }
 
                     return GridView.builder(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -194,9 +248,9 @@ class MenuScreen extends ConsumerWidget {
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
                       ),
-                      itemCount: products.length,
+                      itemCount: filteredProducts.length,
                       itemBuilder: (context, index) {
-                        final product = products[index];
+                        final product = filteredProducts[index];
                         return FadeInUp(
                           delay: Duration(milliseconds: index * 50),
                           child: _ProductCardModern(product: product, currency: currency),
@@ -226,53 +280,30 @@ class MenuScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategoryChip(String label, bool isSelected) {
+  // Chip Kategori yang bisa diklik
+  Widget _buildCategoryChip({required String label, required bool isSelected, required VoidCallback onTap}) {
     return Padding(
       padding: const EdgeInsets.only(right: 10.0),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        alignment: Alignment.center,
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF212121) : Colors.white,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: isSelected ? Colors.transparent : Colors.grey[300]!),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 5, offset: const Offset(0, 2))] : null
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected ? Colors.white : Colors.grey[700],
-            fontWeight: FontWeight.w600,
-            fontSize: 12
+      child: GestureDetector(
+        onTap: onTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: isSelected ? const Color(0xFF212121) : Colors.white,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: isSelected ? Colors.transparent : Colors.grey[300]!),
+            boxShadow: isSelected ? [BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 5, offset: const Offset(0, 2))] : null
           ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final VoidCallback onTap;
-
-  const _ActionButton({required this.icon, required this.label, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(12),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, color: Colors.white, size: 20),
-            const SizedBox(height: 2),
-            Text(label, style: const TextStyle(color: Colors.white, fontSize: 9)),
-          ],
+          child: Text(
+            label,
+            style: TextStyle(
+              color: isSelected ? Colors.white : Colors.grey[700],
+              fontWeight: FontWeight.w600,
+              fontSize: 12
+            ),
+          ),
         ),
       ),
     );
@@ -313,7 +344,6 @@ class _ProductCardModernState extends State<_ProductCardModern> {
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          // RUMUS YANG BENAR:
           transform: Matrix4.diagonal3Values(scale, scale, 1.0), 
           decoration: BoxDecoration(
             color: Colors.white,
