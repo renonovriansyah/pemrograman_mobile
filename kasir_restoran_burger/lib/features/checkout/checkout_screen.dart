@@ -4,6 +4,8 @@ import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
 import '../cart/cart_model.dart';
 import '../cart/cart_provider.dart';
+import '../../data/firestore_service.dart';
+import '../../core/utils/pdf_generator.dart';
 
 class CheckoutScreen extends ConsumerStatefulWidget {
   const CheckoutScreen({super.key});
@@ -231,31 +233,85 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     );
   }
 
-  // LOGIC TRANSAKSI SELESAI
-  void _processTransaction(BuildContext context, WidgetRef ref) {
-    ref.read(cartProvider.notifier).clearCart();
+  // LOGIC TRANSAKSI (PERBAIKAN BUILD CONTEXT)
+  Future<void> _processTransaction(BuildContext context, WidgetRef ref) async {
+    final cartItems = ref.read(cartProvider);
+    final totalAmount = ref.read(cartTotalProvider);
 
+    // Loading
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Column(
-          children: [
-            Icon(Icons.check_circle, color: AppColors.success, size: 60),
-            SizedBox(height: 10),
-            Text("Pembayaran Berhasil!"),
+      builder: (context) => const Center(child: CircularProgressIndicator()),
+    );
+
+    try {
+      // Siapkan Data
+      final List<Map<String, dynamic>> orderItems = cartItems.map((item) {
+        return {
+          'productName': item.product.name,
+          'quantity': item.quantity,
+          'priceAtMoment': item.product.basePrice,
+          'totalPrice': item.totalPrice,
+          'variants': item.selectedVariants.map((k, v) => MapEntry(k, v.name)),
+          'modifiers': item.selectedModifiers.map((e) => e.name).toList(),
+          'note': item.notes ?? '',
+        };
+      }).toList();
+
+      // 4. KIRIM KE FIREBASE
+      await FirestoreService().saveOrder(
+        totalAmount: totalAmount,
+        paymentMethod: selectedPayment,
+        items: orderItems,
+      );
+
+      // --- TAMBAHAN BARU: CETAK STRUK PDF ---
+      // Kita cetak dulu sebelum reset keranjang
+      await PdfGenerator.printReceipt(cartItems, totalAmount, selectedPayment);
+      // ---------------------------------------
+
+      if (!context.mounted) return; 
+
+      // Tutup Loading
+      Navigator.pop(context); 
+
+      // Kosongkan Keranjang Lokal
+      ref.read(cartProvider.notifier).clearCart();
+
+      if (!context.mounted) return;
+
+      // Tampilkan Sukses
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          title: const Column(
+            children: [
+              Icon(Icons.check_circle, color: AppColors.success, size: 60),
+              SizedBox(height: 10),
+              Text("Transaksi Sukses!"),
+            ],
+          ),
+          content: const Text("Data penjualan telah tersimpan di Server.", textAlign: TextAlign.center),
+          actions: [
+            TextButton(
+              onPressed: () {
+                // Reset ke Menu
+                Navigator.of(context).popUntil((route) => route.isFirst);
+              },
+              child: const Text("TRANSAKSI BARU"),
+            ),
           ],
         ),
-        content: const Text("Struk sedang dicetak... (Simulasi)", textAlign: TextAlign.center),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.of(context).popUntil((route) => route.isFirst);
-            },
-            child: const Text("KEMBALI KE MENU"),
-          ),
-        ],
-      ),
-    );
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context); // Tutup loading jika error
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Gagal menyimpan: $e"), backgroundColor: Colors.red),
+      );
+    }
   }
 }

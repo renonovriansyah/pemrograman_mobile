@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import '../../data/firestore_service.dart'; // <--- SUDAH DIGANTI KE FIRESTORE
+import '../../data/firestore_service.dart';
 import '../../data/models/product_model.dart';
 import '../cart/cart_model.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
+import '../history/history_screen.dart';
 
 class MenuScreen extends ConsumerWidget {
   const MenuScreen({super.key});
@@ -26,6 +27,19 @@ class MenuScreen extends ConsumerWidget {
         backgroundColor: const Color(0xFF720E1E),
         elevation: 0,
         actions: [
+          // TOMBOL BARU: RIWAYAT
+          IconButton(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryScreen()),
+              );
+            },
+            icon: const Icon(Icons.history),
+            tooltip: "Riwayat Transaksi",
+          ),
+          
+          // Icon Keranjang
           Stack(
             children: [
               IconButton(
