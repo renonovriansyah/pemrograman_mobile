@@ -29,101 +29,130 @@ class TransactionDetailScreen extends StatelessWidget {
     } else {
       date = DateTime.now();
     }
-    final dateStr = DateFormat('dd MMM yyyy, HH:mm').format(date);
+    final dateStr = DateFormat('dd/MM/yyyy HH:mm').format(date);
     
-    final idShort = documentId.length > 8 ? documentId.substring(0, 8).toUpperCase() : documentId;
+    // final idShort = documentId.length > 8 ? documentId.substring(0, 8).toUpperCase() : documentId;
 
     return Scaffold(
       extendBodyBehindAppBar: true,
-      // --- HEADER KOTAK STANDAR ---
+      // --- HEADER ---
       appBar: AppBar(
-        title: const Text("Detail Transaksi"),
+        title: const Text("Detail Transaksi", style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         backgroundColor: const Color(0xFF720E1E),
         foregroundColor: Colors.white,
         elevation: 0,
       ),
-      // --- BACKGROUND GAMBAR ---
+      // --- BODY ---
       body: AppBackground(
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
             child: Column(
               children: [
-                // 1. KERTAS STRUK (BAGIAN PUTIH)
+                // 1. KERTAS STRUK
                 Container(
-                  width: double.infinity,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    // Hanya melengkung di bagian atas
                     borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                     boxShadow: [
-                      BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 15, offset: const Offset(0, -2))
+                      BoxShadow(
+                        color: Colors.black.withAlpha(13), 
+                        blurRadius: 20, 
+                        offset: const Offset(0, 10)
+                      )
                     ],
                   ),
                   child: Column(
                     children: [
-                      // --- LOGO & ALAMAT ---
+                      // --- HEADER STRUK ---
                       Container(
                         padding: const EdgeInsets.all(24),
-                        decoration: BoxDecoration(
-                          border: Border(bottom: BorderSide(color: Colors.grey[200]!, style: BorderStyle.solid)),
+                        decoration: const BoxDecoration(
+                          border: Border(bottom: BorderSide(color: Colors.black12, style: BorderStyle.none)),
                         ),
                         child: Column(
                           children: [
                             Image.asset(
                               'assets/logo.png',
                               height: 50,
-                              errorBuilder: (_, __, ___) => const Icon(Icons.lunch_dining, size: 40, color: Color(0xFF720E1E)),
+                              errorBuilder: (_, __, ___) => const Icon(Icons.lunch_dining, size: 48, color: Color(0xFF720E1E)),
                             ),
                             const SizedBox(height: 12),
-                            const Text("SIZZLE BURGER", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.2, color: Color(0xFF720E1E))),
+                            const Text("SIZZLE BURGER", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.5, color: Color(0xFF720E1E))),
                             const SizedBox(height: 4),
-                            Text("Jln. Rasa Juara No. 1", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-                            const SizedBox(height: 12),
-                            // Badge Status Lunas
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                              decoration: BoxDecoration(
-                                color: Colors.green[50],
-                                borderRadius: BorderRadius.circular(4),
-                                border: Border.all(color: Colors.green.withAlpha(50))
-                              ),
-                              child: Text("LUNAS • $method", style: TextStyle(fontSize: 10, color: Colors.green[800], fontWeight: FontWeight.bold)),
-                            )
+                            const Text("Jln. Rasa Juara No. 1", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 20),
+                            
+                            _buildDashedLine(),
+                            const SizedBox(height: 16),
+                            
+                            // Info Tanggal & Kasir
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Tanggal", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                Text(dateStr, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Kasir", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                Text(data['cashierName'] ?? 'Admin', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text("Metode", style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                                Text(method, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ],
                         ),
                       ),
 
-                      // --- ISI ITEM & HARGA ---
+                      // --- LIST ITEM ---
                       Padding(
-                        padding: const EdgeInsets.all(24.0),
+                        padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                         child: Column(
                           children: [
-                            // Info Dasar
-                            _buildInfoRow("ID Transaksi", "#$idShort"),
-                            _buildInfoRow("Waktu", dateStr),
-                            _buildInfoRow("Kasir", data['cashierName'] ?? 'Admin'),
-                            
-                            const SizedBox(height: 20),
                             _buildDashedLine(),
-                            const SizedBox(height: 20),
-
-                            // List Item (Looping)
+                            const SizedBox(height: 16),
+                            
+                            // Looping Items
                             ...items.map((item) => _buildItemRow(item, currency)),
 
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 8),
                             _buildDashedLine(),
-                            const SizedBox(height: 20),
+                            const SizedBox(height: 16),
 
-                            // Total Harga
+                            // --- BAGIAN TOTAL (Disamakan dengan Checkout) ---
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                const Text("Total Bayar", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                Text(currency.format(total), style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF720E1E))),
+                                const Text("Subtotal", style: TextStyle(fontSize: 14)),
+                                Text(currency.format(total), style: const TextStyle(fontSize: 14)),
                               ],
                             ),
+                            const SizedBox(height: 8),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text("TOTAL BAYAR", style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900)),
+                                Text(
+                                  currency.format(total), 
+                                  style: const TextStyle(fontSize: 20, fontWeight: FontWeight.w900, color: Color(0xFF720E1E)),
+                                ),
+                              ],
+                            ),
+                            
+                            const SizedBox(height: 24),
+                            const Text("Terima Kasih!", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                            const Text("Follow IG: @sizzleburger", style: TextStyle(fontSize: 12, color: Colors.grey)),
                           ],
                         ),
                       ),
@@ -131,14 +160,14 @@ class TransactionDetailScreen extends StatelessWidget {
                   ),
                 ),
 
-                // 2. EFEK GERIGI (DIPERBAIKI: Menggunakan decoration agar tidak error)
+                // 2. EFEK GERIGI BAWAH
                 SizedBox(
                   height: 12,
                   width: double.infinity,
                   child: ClipPath(
                     clipper: ZigZagClipper(), 
                     child: Container(
-                      decoration: BoxDecoration( // <-- PERBAIKAN DI SINI
+                      decoration: BoxDecoration(
                         color: Colors.white,
                         boxShadow: [
                           BoxShadow(color: Colors.black.withAlpha(10), blurRadius: 5, offset: const Offset(0, 5))
@@ -150,12 +179,12 @@ class TransactionDetailScreen extends StatelessWidget {
 
                 const SizedBox(height: 30),
 
-                // 3. TOMBOL CETAK
+                // 3. TOMBOL CETAK ULANG
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton.icon(
+                  child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF720E1E), // Warna Maroon
+                      backgroundColor: const Color(0xFF720E1E),
                       padding: const EdgeInsets.symmetric(vertical: 18),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       elevation: 4,
@@ -163,17 +192,22 @@ class TransactionDetailScreen extends StatelessWidget {
                     ),
                     onPressed: () async {
                       try {
-                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Menyiapkan PDF..."), duration: Duration(milliseconds: 500)));
+                        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text("Menyiapkan Struk..."), duration: Duration(milliseconds: 500)));
                         await PdfGenerator.reprint(data, documentId);
                       } catch (e) {
-                        // PERBAIKAN DI SINI: Cek mounted sebelum pakai context
                         if (context.mounted) {
                           showDialog(context: context, builder: (_) => AlertDialog(content: Text("Gagal cetak: $e")));
                         }
                       }
                     },
-                    icon: const Icon(Icons.print_rounded, color: Colors.white),
-                    label: const Text("CETAK ULANG STRUK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.print_rounded, color: Colors.white),
+                        SizedBox(width: 10),
+                        Text("CETAK ULANG STRUK", style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                      ],
+                    ),
                   ),
                 ),
                 
@@ -186,24 +220,9 @@ class TransactionDetailScreen extends StatelessWidget {
     );
   }
 
-  // --- WIDGET PENDUKUNG ---
-
-  Widget _buildInfoRow(String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
-          Text(value, style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-        ],
-      ),
-    );
-  }
-
+  // --- STYLE ITEM ROW (DISAMAKAN DENGAN CHECKOUT) ---
   Widget _buildItemRow(Map<String, dynamic> item, NumberFormat currency) {
     final subTotal = (item['totalPrice'] ?? 0).toDouble();
-    
     final variants = item['variants'] as Map<String, dynamic>? ?? {};
     final modifiers = List<String>.from(item['modifiers'] ?? []);
     
@@ -211,7 +230,7 @@ class TransactionDetailScreen extends StatelessWidget {
     variants.forEach((k, v) => details.add(v));
     details.addAll(modifiers);
     if (item['note'] != null && item['note'].isNotEmpty) {
-      details.add("Note: ${item['note']}");
+      details.add("(${item['note']})"); // Note dalam kurung agar rapi
     }
 
     return Padding(
@@ -219,19 +238,31 @@ class TransactionDetailScreen extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text("${item['quantity']}x", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, color: Color(0xFF720E1E))),
+          // Kotak Kuantitas (Disamakan dengan Checkout)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(4)),
+            child: Text("${item['quantity']}x", style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          ),
           const SizedBox(width: 12),
+          
+          // Detail Produk
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(item['productName'], style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
+                Text(item['productName'], style: const TextStyle(fontWeight: FontWeight.bold)),
                 if (details.isNotEmpty)
-                  Text(details.join(", "), style: TextStyle(fontSize: 11, color: Colors.grey[600], height: 1.2)),
+                  Text(
+                    details.join(", "),
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600], height: 1.2),
+                  ),
               ],
             ),
           ),
-          Text(currency.format(subTotal), style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+          
+          // Harga
+          Text(currency.format(subTotal), style: const TextStyle(fontWeight: FontWeight.w600)),
         ],
       ),
     );
@@ -241,7 +272,7 @@ class TransactionDetailScreen extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final boxWidth = constraints.constrainWidth();
-        const dashWidth = 5.0;
+        const dashWidth = 6.0; // Disamakan lebar dash
         final dashCount = (boxWidth / (2 * dashWidth)).floor();
         return Flex(
           direction: Axis.horizontal,
@@ -253,7 +284,7 @@ class TransactionDetailScreen extends StatelessWidget {
   }
 }
 
-// --- CLIPPER GERIGI (Wajib ada) ---
+// --- CLIPPER GERIGI ---
 class ZigZagClipper extends CustomClipper<Path> {
   @override
   Path getClip(Size size) {
