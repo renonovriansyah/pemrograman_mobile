@@ -9,6 +9,7 @@ import '../cart/cart_model.dart';
 import '../cart/cart_provider.dart';
 import '../cart/cart_screen.dart';
 import '../history/history_screen.dart';
+import '../report/report_screen.dart';
 
 class MenuScreen extends ConsumerStatefulWidget {
   const MenuScreen({super.key});
@@ -88,12 +89,21 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         backgroundColor: const Color(0xFF720E1E),
         elevation: 0,
         actions: [
+          // TOMBOL LAPORAN (BARU)
+          IconButton(
+            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportScreen())),
+            icon: const Icon(Icons.bar_chart_rounded, color: Colors.white, size: 28),
+            tooltip: "Laporan Penjualan",
+          ),
+          const SizedBox(width: 4),
+
           IconButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
             icon: const Icon(Icons.history_rounded, color: Colors.white, size: 28),
             tooltip: "Riwayat Transaksi",
           ),
           const SizedBox(width: 8),
+
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Stack(
