@@ -60,32 +60,95 @@ class _HomePageState extends State<HomePage> {
     });
   }
   
-  // --- HAPUS CATATAN ---
+  // --- DIALOG HAPUS ---
   Future<void> _deleteNote(String id) async {
     final bool? confirm = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => Dialog(
         backgroundColor: widget.isDarkMode ? const Color(0xFF2C2C3E) : Colors.white,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text('Hapus Catatan?', 
-          style: TextStyle(color: widget.isDarkMode ? Colors.white : Colors.black87, fontWeight: FontWeight.bold)),
-        content: Text('Catatan ini akan dihapus permanen.',
-          style: TextStyle(color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600])),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Batal', style: TextStyle(color: Colors.grey)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)), 
+        child: Padding(
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min, 
+            children: [
+              ZoomIn(
+                duration: const Duration(milliseconds: 300),
+                child: Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.delete_forever_rounded, color: Colors.red, size: 32),
+                ),
+              ),
+              const SizedBox(height: 20),
+              
+              Text(
+                'Hapus Catatan?',
+                style: GoogleFonts.poppins(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: widget.isDarkMode ? Colors.white : const Color(0xFF2D3142),
+                ),
+              ),
+              const SizedBox(height: 10),
+              
+              Text(
+                'Apakah kamu yakin ingin menghapus catatan ini secara permanen?',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(
+                  fontSize: 14,
+                  color: widget.isDarkMode ? Colors.grey[400] : Colors.grey[600],
+                  height: 1.5
+                ),
+              ),
+              const SizedBox(height: 24),
+              
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        backgroundColor: widget.isDarkMode ? Colors.grey[800] : Colors.grey[100],
+                      ),
+                      child: Text(
+                        'Batal', 
+                        style: GoogleFonts.poppins(
+                          color: widget.isDarkMode ? Colors.white70 : Colors.grey[700],
+                          fontWeight: FontWeight.w600
+                        )
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      style: ElevatedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        backgroundColor: Colors.red[400],
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: Text(
+                        'Ya, Hapus', 
+                        style: GoogleFonts.poppins(
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600
+                        )
+                      ),
+                    ),
+                  ),
+                ],
+              )
+            ],
           ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red[400],
-              elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            ),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Hapus', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          ),
-        ],
+        ),
       ),
     );
 
@@ -97,18 +160,52 @@ class _HomePageState extends State<HomePage> {
         _filterNotes();
       });
       
+      // --- SNACKBAR HAPUS MODERN (FIXED VISIBILITY) ---
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
           content: Row(
-            children: const [
-              Icon(Icons.delete_outline_rounded, color: Colors.white),
-              SizedBox(width: 10),
-              Text('Catatan dihapus'),
+            children: [
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: Colors.white.withAlpha(25), 
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.delete_sweep_rounded, color: Colors.white, size: 24),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Terhapus!', 
+                      style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 15, // Sedikit diperbesar
+                        color: Colors.white
+                      )
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'Catatan telah dihapus permanen.', 
+                      style: GoogleFonts.poppins(
+                        fontSize: 13, // Sedikit diperbesar
+                        color: Colors.white // FULL WHITE (JELAS)
+                      )
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
-          backgroundColor: Colors.red[400],
+          backgroundColor: const Color(0xFFE11D48), // Warna Merah Modern
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          elevation: 4,
+          margin: const EdgeInsets.all(20),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         ),
       );
     }
@@ -124,7 +221,7 @@ class _HomePageState extends State<HomePage> {
           if (pinnedCount >= 3) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: const Text('Maksimal hanya 3 catatan yang dapat disematkan!', style: TextStyle(color: Colors.white)),
+                content: Text('Maksimal hanya 3 catatan yang dapat disematkan!', style: GoogleFonts.poppins(color: Colors.white)),
                 backgroundColor: Colors.orange[800],
                 behavior: SnackBarBehavior.floating,
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
@@ -140,7 +237,7 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  // --- NAVIGASI KE FORM & VALIDASI SUKSES ---
+  // --- NAVIGASI & SNACKBAR SIMPAN MODERN ---
   Future<void> _navigateToForm({Note? note}) async {
     final pinnedCount = _notes.where((n) => n.isPinned).length;
 
@@ -163,31 +260,57 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         int index = _notes.indexWhere((n) => n.id == result.id);
         
-        // Cek apakah ini Update atau Baru untuk pesan SnackBar
-        String message = index != -1 ? 'Catatan berhasil diperbarui! ✨' : 'Catatan baru dibuat! 🎉';
+        String titleMsg = index != -1 ? 'Berhasil Diubah!' : 'Berhasil Dibuat!';
+        String bodyMsg = index != -1 ? 'Catatan kamu telah diperbarui.' : 'Catatan baru telah ditambahkan.';
         
         if (index != -1) {
-          _notes[index] = result; // Update
+          _notes[index] = result; 
         } else {
-          _notes.add(result); // Baru
+          _notes.add(result); 
         }
         StorageService.saveNotes(_notes);
         _filterNotes();
 
-        // TAMPILKAN VALIDASI SUKSES
+        // --- SNACKBAR SIMPAN MODERN (CONSISTENT) ---
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
             content: Row(
               children: [
-                const Icon(Icons.check_circle_rounded, color: Colors.white),
-                const SizedBox(width: 10),
-                Text(message, style: const TextStyle(fontWeight: FontWeight.bold)),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withAlpha(25),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_rounded, color: Colors.white, size: 24),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(titleMsg, style: GoogleFonts.poppins(
+                        fontWeight: FontWeight.bold, 
+                        fontSize: 15,
+                        color: Colors.white
+                      )),
+                      const SizedBox(height: 2),
+                      Text(bodyMsg, style: GoogleFonts.poppins(
+                        fontSize: 13, 
+                        color: Colors.white // FULL WHITE (JELAS)
+                      )),
+                    ],
+                  ),
+                ),
               ],
             ),
             backgroundColor: const Color(0xFF059669), // Emerald Green
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-            duration: const Duration(seconds: 2),
+            margin: const EdgeInsets.all(20),
+            elevation: 4,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
           ),
         );
       });
@@ -381,7 +504,7 @@ class _HomePageState extends State<HomePage> {
           backgroundColor: const Color(0xFF6C63FF),
           onPressed: () => _navigateToForm(),
           label: const Text('Buat Catatan', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          icon: const Icon(Icons.note_add_rounded, color: Colors.white), // Icon Cantik
+          icon: const Icon(Icons.note_add_rounded, color: Colors.white),
           elevation: 5,
         ),
       ),
@@ -506,7 +629,7 @@ class _HomePageState extends State<HomePage> {
                             color: Colors.red.withAlpha(15),
                             shape: BoxShape.circle
                           ),
-                          child: const Icon(Icons.delete_rounded, size: 20, color: Colors.redAccent), // Icon Sampah Cantik
+                          child: const Icon(Icons.delete_rounded, size: 20, color: Colors.redAccent),
                         ),
                       )
                     ],
