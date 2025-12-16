@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/theme/app_colors.dart';
+import 'transaction_detail_screen.dart';
 
 class HistoryScreen extends StatelessWidget {
   const HistoryScreen({super.key});
@@ -74,16 +75,18 @@ class HistoryScreen extends StatelessWidget {
                 subtitle: Text("${dateFormat.format(date)} • $method"),
                 trailing: const Icon(Icons.chevron_right, color: Colors.grey),
                 onTap: () {
-                  // Nanti bisa tambah fitur lihat detail / cetak ulang struk di sini
-                  showDialog(
-                    context: context, 
-                    builder: (ctx) => AlertDialog(
-                      title: const Text("Detail Transaksi"),
-                      content: Text("ID: ${docs[index].id}\nTotal: ${currency.format(total)}"),
-                    )
-                  );
-                },
-              );
+                // NAVIGASI KE DETAIL
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => TransactionDetailScreen(
+                      data: data,
+                      documentId: docs[index].id,
+                    ),
+                  ),
+                );
+              },
+            );
             },
           );
         },
