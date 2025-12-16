@@ -18,10 +18,12 @@ class MenuScreen extends ConsumerStatefulWidget {
 }
 
 class _MenuScreenState extends ConsumerState<MenuScreen> {
-  // 1. Variable State untuk Kategori Terpilih
+  // 1. Variable State
   String selectedCategory = 'Semua Menu';
+  // TAMBAHAN: Controller untuk pencarian
+  final TextEditingController _searchController = TextEditingController(); 
+  String _searchQuery = '';
 
-  // 2. Daftar Kategori (Urutan ini akan digunakan untuk sorting "Semua Menu")
   final List<String> categories = [
     'Semua Menu',
     'Burger Premium',
@@ -29,6 +31,12 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
     'Sides',
     'Dessert', 
   ];
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,7 +51,6 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         toolbarHeight: 70,
         title: Row(
           children: [
-            // LOGO SECTION
             Container(
               height: 40, width: 40,
               decoration: BoxDecoration(
@@ -127,15 +134,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // 1. BANNER PROMO & KATEGORI
+              // BAGIAN ATAS (SCROLLABLE JIKA DIBUTUHKAN)
               Container(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                 child: Column(
                   children: [
-                    // Banner
+                    // 1. BANNER PROMO
                     Container(
                       width: double.infinity,
-                      height: 130,
+                      height: 120, // Sedikit diperkecil agar muat search bar
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         gradient: const LinearGradient(
@@ -151,7 +158,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                         children: [
                           Positioned(
                             right: -10, bottom: -10,
-                            child: Icon(Icons.fastfood_rounded, size: 150, color: Colors.white.withAlpha(20)),
+                            child: Icon(Icons.fastfood_rounded, size: 140, color: Colors.white.withAlpha(20)),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(20.0),
@@ -165,7 +172,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                                   child: const Text("PROMO HARI INI", style: TextStyle(color: Color(0xFF720E1E), fontWeight: FontWeight.w900, fontSize: 10)),
                                 ),
                                 const SizedBox(height: 8),
-                                const Text("Diskon 20%\nDouble Cheese Burger", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 20, height: 1.2)),
+                                const Text("Diskon 20%\nDouble Cheese Burger", style: TextStyle(color: Colors.white, fontWeight: FontWeight.w800, fontSize: 18, height: 1.2)),
                               ],
                             ),
                           ),
@@ -174,8 +181,49 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     ),
                     
                     const SizedBox(height: 16),
+
+                    // 2. SEARCH BAR (FITUR BARU)
+                    TextField(
+                      controller: _searchController,
+                      onChanged: (value) {
+                        setState(() {
+                          _searchQuery = value.toLowerCase();
+                        });
+                      },
+                      decoration: InputDecoration(
+                        hintText: "Cari menu favoritmu...",
+                        prefixIcon: const Icon(Icons.search, color: Colors.grey),
+                        suffixIcon: _searchQuery.isNotEmpty 
+                          ? IconButton(
+                              icon: const Icon(Icons.clear, color: Colors.grey),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : null,
+                        filled: true,
+                        fillColor: Colors.white,
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: BorderSide.none,
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(30),
+                          borderSide: const BorderSide(color: Color(0xFF720E1E), width: 1.5),
+                        ),
+                        // Shadow effect
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
                     
-                    // Kategori Chips (ListView Horizontal)
+                    // 3. KATEGORI CHIPS
                     SizedBox(
                       height: 40,
                       child: ListView.builder( 
@@ -200,7 +248,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 ),
               ),
 
-              // 2. GRID PRODUK DENGAN FILTER & SORTING
+              // 4. GRID PRODUK DENGAN FILTER & SEARCH
               Expanded(
                 child: StreamBuilder<List<Product>>(
                   stream: FirestoreService().getProducts(),
@@ -217,43 +265,50 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
                     final allProducts = snapshot.data!;
                     
-                    // A. FILTERING
+                    // --- LOGIKA FILTER BERLAPIS ---
                     var filteredProducts = allProducts.where((product) {
-                      if (selectedCategory == 'Semua Menu') return true;
-                      return product.category.toLowerCase() == selectedCategory.toLowerCase();
+                      // 1. Cek Kategori
+                      bool categoryMatch = (selectedCategory == 'Semua Menu') || 
+                                           (product.category.toLowerCase() == selectedCategory.toLowerCase());
+                      
+                      // 2. Cek Search Query
+                      bool searchMatch = true;
+                      if (_searchQuery.isNotEmpty) {
+                        searchMatch = product.name.toLowerCase().contains(_searchQuery);
+                      }
+
+                      return categoryMatch && searchMatch;
                     }).toList();
 
-                    // B. SORTING (LOGIKA BARU DI SINI)
+                    // --- LOGIKA SORTING ---
                     filteredProducts.sort((a, b) {
-                      if (selectedCategory == 'Semua Menu') {
-                        // 1. Jika "Semua Menu", urutkan berdasarkan Kategori dulu
-                        // Kita cari index kategori produk di dalam list 'categories' class kita
-                        // Agar urutannya: Burger -> Minuman -> Sides -> Dessert
+                      if (selectedCategory == 'Semua Menu' && _searchQuery.isEmpty) {
                         int indexA = categories.indexWhere((c) => c.toLowerCase() == a.category.toLowerCase());
                         int indexB = categories.indexWhere((c) => c.toLowerCase() == b.category.toLowerCase());
-
-                        // Jika kategori tidak ketemu di list (misal salah ketik di DB), lempar ke belakang
                         if (indexA == -1) indexA = 999;
                         if (indexB == -1) indexB = 999;
-
                         int categoryCompare = indexA.compareTo(indexB);
-
-                        // Jika kategorinya sama, baru urutkan Nama A-Z
-                        if (categoryCompare == 0) {
-                          return a.name.compareTo(b.name);
-                        }
+                        if (categoryCompare == 0) return a.name.compareTo(b.name);
                         return categoryCompare;
                       } else {
-                        // 2. Jika Filter Kategori tertentu (misal Minuman), langsung urutkan Nama A-Z
                         return a.name.compareTo(b.name);
                       }
                     });
 
                     if (filteredProducts.isEmpty) {
                       return Center(
-                        child: Text(
-                          "Belum ada menu di kategori $selectedCategory",
-                          style: TextStyle(color: Colors.grey[500]),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_off_rounded, size: 60, color: Colors.grey[400]),
+                            const SizedBox(height: 10),
+                            Text(
+                              _searchQuery.isNotEmpty 
+                                ? "Tidak ada hasil untuk \"$_searchQuery\""
+                                : "Kategori ini kosong",
+                              style: TextStyle(color: Colors.grey[500]),
+                            ),
+                          ],
                         ),
                       );
                     }
@@ -270,7 +325,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                       itemBuilder: (context, index) {
                         final product = filteredProducts[index];
                         return FadeInUp(
-                          delay: Duration(milliseconds: (index * 50).clamp(0, 500)), // Clamp biar gak kelamaan kalau item banyak
+                          delay: Duration(milliseconds: (index * 50).clamp(0, 500)),
                           child: _ProductCardModern(product: product, currency: currency),
                         );
                       },
