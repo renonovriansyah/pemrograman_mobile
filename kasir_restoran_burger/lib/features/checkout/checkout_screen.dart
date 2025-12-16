@@ -27,21 +27,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
       // --- CUSTOM HEADER ---
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(80),
-        child: AppBar(
-          title: const Text("Konfirmasi Pembayaran", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1)),
-          centerTitle: true,
-          backgroundColor: const Color(0xFF720E1E),
-          elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
-            onPressed: () => Navigator.pop(context),
-          ),
-          shape: const RoundedRectangleBorder(
-            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24))
-          ),
-        ),
+      appBar: AppBar(
+        title: const Text("Konfirmasi Pembayaran", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18)),
+        centerTitle: true,
+        backgroundColor: const Color(0xFF720E1E),
+        foregroundColor: Colors.white,
+        elevation: 0,
       ),
       // ---------------------
       body: SingleChildScrollView(
@@ -207,10 +198,10 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 width: double.infinity,
                 child: ElevatedButton(
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF4CAF50),
+                    backgroundColor: const Color(0xFF720E1E), // Warna Maroon
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     elevation: 4,
-                    shadowColor: Colors.green.withAlpha(102),
+                    shadowColor: const Color(0xFF720E1E).withAlpha(100),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   onPressed: () {
@@ -220,12 +211,21 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     }
                     _processTransaction(context, ref);
                   },
+                  // Gunakan Row untuk mensejajarkan Ikon dan Teks
                   child: const Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.print_rounded, color: Colors.white),
-                      SizedBox(width: 10),
-                      Text("SELESAIKAN PESANAN", style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, letterSpacing: 0.5)),
+                      Icon(Icons.payment_rounded, color: Colors.white, size: 24), // Ikon Pembayaran
+                      SizedBox(width: 12), // Jarak antar ikon dan teks
+                      Text(
+                        "BAYAR PESANAN",
+                        style: TextStyle(
+                          fontSize: 16, 
+                          fontWeight: FontWeight.bold, 
+                          letterSpacing: 1.0,
+                          color: Colors.white // Pastikan warna teks putih
+                        ),
+                      ),
                     ],
                   ),
                 ),

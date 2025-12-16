@@ -79,7 +79,7 @@ class MenuScreen extends ConsumerWidget {
                 IconButton(
                   onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const CartScreen())),
                   icon: const Icon(Icons.shopping_bag_outlined, color: Colors.white, size: 28),
-                  tooltip: "Keranjang Belanja",
+                  tooltip: "Keranjang",
                 ),
                 if (totalItems > 0)
                   Positioned(
