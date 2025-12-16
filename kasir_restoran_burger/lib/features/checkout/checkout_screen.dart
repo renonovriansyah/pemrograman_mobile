@@ -2,7 +2,6 @@ import 'package:animate_do/animate_do.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-// import '../../core/theme/app_colors.dart'; <--- Dihapus karena unused
 import '../../core/utils/pdf_generator.dart';
 import '../../data/firestore_service.dart';
 import '../cart/cart_model.dart';
@@ -16,7 +15,7 @@ class CheckoutScreen extends ConsumerStatefulWidget {
 }
 
 class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
-  String selectedPayment = 'TUNAI'; 
+  String selectedPayment = 'TUNAI';
 
   @override
   Widget build(BuildContext context) {
@@ -27,13 +26,24 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8F9FA),
-      appBar: AppBar(
-        title: const Text("Konfirmasi Pembayaran", style: TextStyle(fontWeight: FontWeight.bold)),
-        centerTitle: true,
-        backgroundColor: Colors.white,
-        foregroundColor: const Color(0xFF720E1E),
-        elevation: 1,
+      // --- CUSTOM HEADER ---
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(80),
+        child: AppBar(
+          title: const Text("Konfirmasi Pembayaran", style: TextStyle(fontWeight: FontWeight.w900, color: Colors.white, letterSpacing: 1)),
+          centerTitle: true,
+          backgroundColor: const Color(0xFF720E1E),
+          elevation: 0,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white),
+            onPressed: () => Navigator.pop(context),
+          ),
+          shape: const RoundedRectangleBorder(
+            borderRadius: BorderRadius.vertical(bottom: Radius.circular(24))
+          ),
+        ),
       ),
+      // ---------------------
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(24),
         child: FadeInUp(
@@ -47,7 +57,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [
                     BoxShadow(
-                      // withOpacity(0.05) -> withAlpha(13)
                       color: Colors.black.withAlpha(13), 
                       blurRadius: 20, 
                       offset: const Offset(0, 10)
@@ -56,7 +65,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Header
+                    // BAGIAN ATAS KERTAS (Header)
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: const BoxDecoration(
@@ -73,8 +82,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                           const SizedBox(height: 12),
                           const Text("SIZZLE BURGER", style: TextStyle(fontWeight: FontWeight.w900, fontSize: 18, letterSpacing: 1.5, color: Color(0xFF720E1E))),
                           const SizedBox(height: 4),
-                          const Text("Jalan Rasa Juara No. 1", style: TextStyle(fontSize: 12, color: Colors.grey)),
-                          const Text("Telp: 0812-3456-7890", style: TextStyle(fontSize: 12, color: Colors.grey)),
+                          const Text("Jln. Rasa Juara No. 1", style: TextStyle(fontSize: 12, color: Colors.grey)),
                           const SizedBox(height: 20),
                           _buildDashedLine(),
                           const SizedBox(height: 16),
@@ -97,7 +105,7 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                       ),
                     ),
 
-                    // Isi Item
+                    // LIST ITEM & TOTAL (Bagian Isi)
                     Padding(
                       padding: const EdgeInsets.fromLTRB(24, 0, 24, 24),
                       child: Column(
@@ -141,9 +149,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                                 ),
                               );
                             }),
+
                           const SizedBox(height: 16),
                           _buildDashedLine(),
                           const SizedBox(height: 16),
+
+                          // TOTAL SECTION
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
@@ -177,6 +188,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
 
               const SizedBox(height: 32),
+
+              // --- PILIH METODE BAYAR ---
               const Align(alignment: Alignment.centerLeft, child: Text("Metode Pembayaran", style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
               const SizedBox(height: 12),
               Row(
@@ -188,6 +201,8 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
               ),
 
               const SizedBox(height: 40),
+
+              // --- TOMBOL FINAL ---
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
@@ -195,7 +210,6 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
                     backgroundColor: const Color(0xFF4CAF50),
                     padding: const EdgeInsets.symmetric(vertical: 18),
                     elevation: 4,
-                    // withOpacity(0.4) -> withAlpha(102)
                     shadowColor: Colors.green.withAlpha(102),
                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   ),
@@ -235,14 +249,12 @@ class _CheckoutScreenState extends ConsumerState<CheckoutScreen> {
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(vertical: 16),
           decoration: BoxDecoration(
-            // withOpacity(0.05) -> withAlpha(13)
             color: isSelected ? primaryColor.withAlpha(13) : Colors.white,
             border: Border.all(
               color: isSelected ? primaryColor : Colors.grey[200]!, 
               width: isSelected ? 2 : 1
             ),
             borderRadius: BorderRadius.circular(12),
-            // withOpacity(0.05) -> withAlpha(13)
             boxShadow: isSelected ? [] : [BoxShadow(color: Colors.grey.withAlpha(13), blurRadius: 5)],
           ),
           child: Column(
