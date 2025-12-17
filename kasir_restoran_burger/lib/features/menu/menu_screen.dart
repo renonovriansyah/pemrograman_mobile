@@ -19,9 +19,7 @@ class MenuScreen extends ConsumerStatefulWidget {
 }
 
 class _MenuScreenState extends ConsumerState<MenuScreen> {
-  // 1. Variable State
   String selectedCategory = 'Semua Menu';
-  // TAMBAHAN: Controller untuk pencarian
   final TextEditingController _searchController = TextEditingController(); 
   String _searchQuery = '';
 
@@ -58,7 +56,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(10),
                 boxShadow: [
-                  BoxShadow(color: Colors.black.withAlpha(20), blurRadius: 5)
+                  BoxShadow(color: Colors.black.withValues(alpha: 0.2), blurRadius: 5)
                 ]
               ),
               child: Padding(
@@ -89,21 +87,18 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         backgroundColor: const Color(0xFF720E1E),
         elevation: 0,
         actions: [
-          // TOMBOL LAPORAN (BARU)
           IconButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const ReportScreen())),
             icon: const Icon(Icons.bar_chart_rounded, color: Colors.white, size: 28),
             tooltip: "Laporan Penjualan",
           ),
           const SizedBox(width: 4),
-
           IconButton(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (context) => const HistoryScreen())),
             icon: const Icon(Icons.history_rounded, color: Colors.white, size: 28),
             tooltip: "Riwayat Transaksi",
           ),
           const SizedBox(width: 8),
-
           Padding(
             padding: const EdgeInsets.only(right: 16.0),
             child: Stack(
@@ -144,15 +139,14 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // BAGIAN ATAS (SCROLLABLE JIKA DIBUTUHKAN)
               Container(
                 padding: const EdgeInsets.fromLTRB(20, 10, 20, 10),
                 child: Column(
                   children: [
-                    // 1. BANNER PROMO
+                    // BANNER PROMO
                     Container(
                       width: double.infinity,
-                      height: 120, // Sedikit diperkecil agar muat search bar
+                      height: 120,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(16),
                         gradient: const LinearGradient(
@@ -161,14 +155,14 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                           end: Alignment.bottomRight,
                         ),
                         boxShadow: [
-                          BoxShadow(color: const Color(0xFF720E1E).withAlpha(80), blurRadius: 10, offset: const Offset(0, 5))
+                          BoxShadow(color: const Color(0xFF720E1E).withValues(alpha: 0.8), blurRadius: 10, offset: const Offset(0, 5))
                         ]
                       ),
                       child: Stack(
                         children: [
                           Positioned(
                             right: -10, bottom: -10,
-                            child: Icon(Icons.fastfood_rounded, size: 140, color: Colors.white.withAlpha(20)),
+                            child: Icon(Icons.fastfood_rounded, size: 140, color: Colors.white.withValues(alpha: 0.2)),
                           ),
                           Padding(
                             padding: const EdgeInsets.all(20.0),
@@ -192,7 +186,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                     
                     const SizedBox(height: 16),
 
-                    // 2. SEARCH BAR (FITUR BARU)
+                    // SEARCH BAR
                     TextField(
                       controller: _searchController,
                       onChanged: (value) {
@@ -215,25 +209,15 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                         filled: true,
                         fillColor: Colors.white,
                         contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 20),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: BorderSide.none,
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(30),
-                          borderSide: const BorderSide(color: Color(0xFF720E1E), width: 1.5),
-                        ),
-                        // Shadow effect
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: BorderSide.none),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(30), borderSide: const BorderSide(color: Color(0xFF720E1E), width: 1.5)),
                       ),
                     ),
 
                     const SizedBox(height: 16),
                     
-                    // 3. KATEGORI CHIPS
+                    // KATEGORI CHIPS
                     SizedBox(
                       height: 40,
                       child: ListView.builder( 
@@ -258,7 +242,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
                 ),
               ),
 
-              // 4. GRID PRODUK DENGAN FILTER & SEARCH
+              // GRID PRODUK
               Expanded(
                 child: StreamBuilder<List<Product>>(
                   stream: FirestoreService().getProducts(),
@@ -275,22 +259,17 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
 
                     final allProducts = snapshot.data!;
                     
-                    // --- LOGIKA FILTER BERLAPIS ---
                     var filteredProducts = allProducts.where((product) {
-                      // 1. Cek Kategori
                       bool categoryMatch = (selectedCategory == 'Semua Menu') || 
                                            (product.category.toLowerCase() == selectedCategory.toLowerCase());
-                      
-                      // 2. Cek Search Query
                       bool searchMatch = true;
                       if (_searchQuery.isNotEmpty) {
                         searchMatch = product.name.toLowerCase().contains(_searchQuery);
                       }
-
                       return categoryMatch && searchMatch;
                     }).toList();
 
-                    // --- LOGIKA SORTING ---
+                    // Sorting
                     filteredProducts.sort((a, b) {
                       if (selectedCategory == 'Semua Menu' && _searchQuery.isEmpty) {
                         int indexA = categories.indexWhere((c) => c.toLowerCase() == a.category.toLowerCase());
@@ -376,7 +355,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
             color: isSelected ? const Color(0xFF212121) : Colors.white,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: isSelected ? Colors.transparent : Colors.grey[300]!),
-            boxShadow: isSelected ? [BoxShadow(color: Colors.black.withAlpha(50), blurRadius: 5, offset: const Offset(0, 2))] : null
+            boxShadow: isSelected ? [BoxShadow(color: Colors.black.withValues(alpha: 0.5), blurRadius: 5, offset: const Offset(0, 2))] : null
           ),
           child: Text(
             label,
@@ -392,7 +371,7 @@ class _MenuScreenState extends ConsumerState<MenuScreen> {
   }
 }
 
-// --- KARTU PRODUK MODERN ---
+// --- KARTU PRODUK MODERN (DIPERBARUI) ---
 class _ProductCardModern extends StatefulWidget {
   final Product product;
   final NumberFormat currency;
@@ -408,6 +387,8 @@ class _ProductCardModernState extends State<_ProductCardModern> {
 
   @override
   Widget build(BuildContext context) {
+    // Cek Status Produk
+    final isAvailable = widget.product.isAvailable;
     final scale = isHovered ? 1.03 : 1.0;
 
     return MouseRegion(
@@ -415,24 +396,65 @@ class _ProductCardModernState extends State<_ProductCardModern> {
       onExit: (_) => setState(() => isHovered = false),
       cursor: SystemMouseCursors.click, 
       child: GestureDetector(
-        onTap: () {
-          showModalBottomSheet(
+        // --- 1. TEKAN TAHAN UNTUK UBAH STATUS (Admin Feature) ---
+        onLongPress: () {
+          showDialog(
             context: context,
-            isScrollControlled: true,
-            backgroundColor: Colors.transparent, 
-            builder: (context) => ProductDetailSheet(product: widget.product),
+            builder: (context) => AlertDialog(
+              title: Text(isAvailable ? "Non-aktifkan Menu?" : "Aktifkan Menu?"),
+              content: Text("Ubah status ${widget.product.name} menjadi ${isAvailable ? 'HABIS' : 'TERSEDIA'}?"),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              actions: [
+                TextButton(
+                  child: const Text("Batal", style: TextStyle(color: Colors.grey)), 
+                  onPressed: () => Navigator.pop(context)
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF720E1E),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  onPressed: () async {
+                    Navigator.pop(context); // Tutup dialog dulu
+                    await FirestoreService().updateProductAvailability(widget.product.id, !isAvailable);
+                  },
+                  child: const Text("Ya, Ubah", style: TextStyle(color: Colors.white)),
+                ),
+              ],
+            ),
           );
+        },
+        // --- 2. TAP BIASA ---
+        onTap: () {
+          if (isAvailable) {
+            showModalBottomSheet(
+              context: context,
+              isScrollControlled: true,
+              backgroundColor: Colors.transparent, 
+              builder: (context) => ProductDetailSheet(product: widget.product),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: const Text("Maaf, produk ini sedang habis!"), 
+                backgroundColor: Colors.grey[700],
+                duration: const Duration(milliseconds: 800),
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
           transform: Matrix4.diagonal3Values(scale, scale, 1.0), 
           decoration: BoxDecoration(
-            color: Colors.white,
+            // PERBAIKAN: withOpacity -> withValues
+            color: Colors.white.withValues(alpha: isAvailable ? 1.0 : 0.9), 
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withAlpha(isHovered ? 25 : 13),
+                color: Colors.black.withValues(alpha: isHovered ? 0.25 : 0.13),
                 blurRadius: isHovered ? 20 : 10,
                 offset: const Offset(0, 8),
               )
@@ -456,11 +478,38 @@ class _ProductCardModernState extends State<_ProductCardModern> {
                         child: Padding(
                           padding: const EdgeInsets.all(12.0),
                           child: widget.product.imagePath.isNotEmpty
-                              ? Image.asset(widget.product.imagePath, fit: BoxFit.contain, errorBuilder: (_,__,___) => const Icon(Icons.lunch_dining, size: 50, color: Colors.orange))
+                              // --- 3. EFEK GAMBAR GRAYSCALE JIKA HABIS ---
+                              ? ColorFiltered(
+                                  colorFilter: isAvailable 
+                                    ? const ColorFilter.mode(Colors.transparent, BlendMode.multiply) // Normal
+                                    : const ColorFilter.mode(Colors.grey, BlendMode.saturation), // Hitam Putih
+                                  child: Image.asset(
+                                    widget.product.imagePath, 
+                                    fit: BoxFit.contain, 
+                                    errorBuilder: (_,__,___) => const Icon(Icons.lunch_dining, size: 50, color: Colors.orange)
+                                  ),
+                                )
                               : const Icon(Icons.lunch_dining, size: 50, color: Colors.orange),
                         ),
                       ),
-                      if (isHovered)
+                      // --- 4. LABEL "HABIS" ---
+                      if (!isAvailable)
+                        Center(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                            decoration: BoxDecoration(
+                              // PERBAIKAN: withOpacity -> withValues
+                              color: Colors.black.withValues(alpha: 0.7),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Text(
+                              "HABIS",
+                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, letterSpacing: 1.2),
+                            ),
+                          ),
+                        ),
+                      // Tombol Plus (+) hanya muncul jika hover DAN tersedia
+                      if (isHovered && isAvailable)
                         Positioned(
                           bottom: 6, right: 6,
                           child: FadeIn(
@@ -478,30 +527,33 @@ class _ProductCardModernState extends State<_ProductCardModern> {
               ),
               Padding(
                 padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.product.category.toUpperCase(),
-                      style: TextStyle(fontSize: 9, color: Colors.grey[500], fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      widget.product.name,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, height: 1.2),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      widget.currency.format(widget.product.basePrice),
-                      style: const TextStyle(
-                        color: Color(0xFF720E1E), 
-                        fontWeight: FontWeight.w900,
-                        fontSize: 14,
+                child: Opacity(
+                  opacity: isAvailable ? 1.0 : 0.5, // Teks agak pudar jika habis
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.product.category.toUpperCase(),
+                        style: TextStyle(fontSize: 9, color: Colors.grey[500], fontWeight: FontWeight.bold),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 2),
+                      Text(
+                        widget.product.name,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14, height: 1.2),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        widget.currency.format(widget.product.basePrice),
+                        style: const TextStyle(
+                          color: Color(0xFF720E1E), 
+                          fontWeight: FontWeight.w900,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
@@ -512,6 +564,7 @@ class _ProductCardModernState extends State<_ProductCardModern> {
   }
 }
 
+// ... (Class ProductDetailSheet tetap sama seperti sebelumnya)
 class ProductDetailSheet extends ConsumerStatefulWidget {
   final Product product;
   const ProductDetailSheet({super.key, required this.product});

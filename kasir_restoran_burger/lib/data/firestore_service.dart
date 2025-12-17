@@ -83,4 +83,17 @@ class FirestoreService {
       rethrow;
     }
   }
+
+  // 4. Update Status Produk (Ready / Habis)
+  Future<void> updateProductAvailability(String productId, bool isAvailable) async {
+    try {
+      await _productsRef.doc(productId).update({
+        'isAvailable': isAvailable,
+      });
+      debugPrint("Status produk berhasil diupdate: $isAvailable");
+    } catch (e) {
+      debugPrint("Gagal update status produk: $e");
+      rethrow;
+    }
+  }
 }

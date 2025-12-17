@@ -4,6 +4,7 @@ class Product {
   final double basePrice;
   final String category;
   final String imagePath;
+  final bool isAvailable; // <--- TAMBAHAN: Status Stok (Ready/Habis)
   final List<VariantGroup> variants;
   final List<ModifierGroup> modifiers;
 
@@ -13,6 +14,7 @@ class Product {
     required this.basePrice,
     required this.category,
     required this.imagePath,
+    this.isAvailable = true, // <--- Default True (Ready) jika tidak diset
     this.variants = const [],
     this.modifiers = const [],
   });
@@ -25,6 +27,8 @@ class Product {
       basePrice: (data['basePrice'] ?? 0).toDouble(),
       category: data['category'] ?? 'Other',
       imagePath: data['imagePath'] ?? '',
+      // Ambil status dari database, jika null (data lama) anggap True
+      isAvailable: data['isAvailable'] ?? true, 
       variants: (data['variants'] as List<dynamic>?)
               ?.map((e) => VariantGroup.fromMap(e))
               .toList() ??
@@ -43,6 +47,7 @@ class Product {
       'basePrice': basePrice,
       'category': category,
       'imagePath': imagePath,
+      'isAvailable': isAvailable, // <--- Simpan status ke database
       'variants': variants.map((e) => e.toMap()).toList(),
       'modifiers': modifiers.map((e) => e.toMap()).toList(),
     };
